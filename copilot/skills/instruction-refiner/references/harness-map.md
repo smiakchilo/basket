@@ -17,7 +17,7 @@ Search in this order (least global → most global):
 | Scope | Instructions | Skills |
 |-------|-------------|--------|
 | Project | `.github/copilot-instructions.md`<br>`.github/instructions/*.instructions.md`<br>`.github/*.instructions.md` | `.github/skills/` |
-| VS Code user | `%APPDATA%\Code\User\prompts\` | — |
+| User local | `%APPDATA%\Code\User\prompts\` | — |
 | User global | `~/.copilot/instructions/*.instructions.md` | `~/.copilot/skills/<name>/SKILL.md` |
 
 ### Claude
@@ -37,6 +37,15 @@ Search in this order:
 | Project | `<project>/.codex/AGENTS.md`<br>Subdirectory `AGENTS.md` files (e.g. `core/AGENTS.md`) | `.codex/skills/<name>/SKILL.md` |
 
 Codex has no user-global instruction store. Rules are written directly into the closest `AGENTS.md`.
+
+#### Nearest AGENTS.md Resolution
+
+When a rule relates to a specific file or module, always pick the **nearest** AGENTS.md rather than defaulting to the root. Walk upward from the affected file's directory until you find a matching basket source:
+
+1. Take the path of the file being modified (e.g., `core/src/main/java/com/example/Foo.java`).
+2. Walk upward through ancestor directories: `core/src/main/java/com/example/` → `core/src/main/java/` → … → `core/` → root.
+3. For each ancestor directory, check whether a corresponding basket source file exists under `codex/`. The naming convention converts the directory path to a flat filename by replacing `/` with `--` and appending `--AGENTS.md` (e.g., `core/` → `codex/core--AGENTS.md`). The project root maps to `codex/AGENTS.md`.
+4. Use the **first match** (the nearest one). Fall back to `codex/AGENTS.md` only if no closer file exists.
 
 ## Scope Heuristic
 

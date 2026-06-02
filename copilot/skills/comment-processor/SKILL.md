@@ -1,6 +1,6 @@
 ---
 name: comment-processor
-description: "Use when: processing PR comments, reviewing PR feedback, fetching GitHub pull request comments, handling Copilot review comments, triaging PR review suggestions, applying PR fixes. Fetches review and conversation comments from the GitHub PR associated with the current branch, evaluates each with the expert model, presents analysis for user verdict, applies approved fixes, and extracts lessons into instruction files."
+description: "Use when: processing PR comments, reviewing PR feedback, fetching GitHub pull request comments, handling Copilot review comments, triaging PR review suggestions, applying PR fixes. Fetches review and conversation comments from the GitHub PR associated with the current branch, evaluates each with the expert model, presents analysis for user verdict, applies approved fixes, and extracts lessons — delegating instruction file targeting and writing to the instruction-refiner skill."
 argument-hint: "Optional: 'all' to include resolved comments (default: unresolved only)"
 ---
 
@@ -319,9 +319,14 @@ Present the candidate lesson and ask:
 
 Wait for the user's response. Update the rule and re-ask if needed. Apply once the user confirms. Only discard if the user explicitly says skip/no.
 
-###### 4.1.5.A.3 Redundancy Check
+###### 4.1.5.A.3 Invoke instruction-refiner
 
-Before writing, read the target instruction file. If a similar rule already exists, do NOT add a duplicate. Instead, analyze why it failed to prevent this mistake (vague phrasing, buried text, wrong `applyTo` scope, not loaded, missing negative example) using the same diagnostics as [instruction-refiner Step 4](../instruction-refiner/SKILL.md). Propose a strengthening amendment to the existing rule rather than a new one.
+Invoke the `instruction-refiner` skill with:
+- `rule_text`: the user-confirmed rule text from 4.1.5.A.2.
+- `rule_type`: `"coding rule"`.
+- `suggested_target_file`: the target instruction file proposed in 4.1.5.A.2 (hint only — instruction-refiner applies its own scope heuristic and redundancy check).
+
+instruction-refiner handles harness detection, file targeting, redundancy analysis, and writing. Do not perform any of those steps here.
 
 ##### 4.1.5.B — Reviewer Lesson
 
@@ -357,9 +362,14 @@ Present the candidate heuristic and ask:
 
 Wait for the user's response. Update the heuristic and re-ask if needed. Apply once the user confirms. Only discard if the user explicitly says skip/no.
 
-###### 4.1.5.B.3 Redundancy Check
+###### 4.1.5.B.3 Invoke instruction-refiner
 
-Before writing, read `$HOME/.copilot/skills/code-reviewer/references/code-review-hints.md` if it exists. If a similar heuristic already exists, do NOT add a duplicate. Instead, analyze why it failed to prompt the reviewer to catch this issue (too vague, wrong scope, technique too narrow, missing signal description), and propose a strengthening amendment to the existing heuristic rather than a new one.
+Invoke the `instruction-refiner` skill with:
+- `rule_text`: the user-confirmed heuristic text from 4.1.5.B.2.
+- `rule_type`: `"reviewer heuristic for the code-reviewer agent"`.
+- `suggested_target_file`: `code-reviewer/references/code-review-hints.md` (hint only — instruction-refiner may override based on its scope heuristic).
+
+instruction-refiner handles harness detection, file targeting, redundancy analysis, and writing. Do not perform any of those steps here.
 
 #### 4.1.6 Checkpoint and Advance
 

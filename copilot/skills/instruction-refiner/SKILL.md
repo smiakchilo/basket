@@ -1,6 +1,6 @@
 ---
 name: instruction-refiner
-description: "Use when: refining AI agent instructions from manual code corrections, learning from user edits, improving coding guidelines, analyzing diffs to update instruction files, updating agent or skill definitions, post-generation cleanup"
+description: "Use when: refining AI agent instructions from manual code corrections, learning from user edits, improving coding guidelines, analyzing diffs to update instruction files, updating agent or skill definitions, post-generation cleanup, applying a pre-formulated rule or heuristic from a calling skill"
 argument-hint: "Optional path, file, or folder containing the manual corrections to analyze (omit to scan all uncommitted changes)"
 ---
 
@@ -71,6 +71,17 @@ A commit message qualifies if it contains any of the following words (case-insen
 Examples that qualify: `"Fixed test output"`, `"Refined instructions"`, `"Improve naming conventions"`, `"Minor cleanup"`.
 If the message matches **only** purely unrelated keywords (e.g. `"Add new feature"`, `"Initial commit"`) it does **not** qualify — only look at HEAD, do not walk further back.
 
+### Case C — pre-formulated rule received from a calling skill
+
+When another skill (e.g. `comment-processor`) has already derived a rule and confirmed it with the user, this skill acts as the file-placement expert only.
+
+**Input interface** (three fields):
+- `rule_text` — the confirmed rule or heuristic, ready to write.
+- `rule_type` — a short label for the kind of rule (e.g. `"coding rule"`, `"reviewer heuristic for the code-reviewer agent"`).
+- `suggested_target_file` — an optional path hint from the calling skill. Treat as a hint only; the scope heuristic in Step 5 governs final placement.
+
+**Action**: skip Steps 2 (diff collection) and 4 (derivation and confirmation) entirely. The caller has already confirmed the rule with the user. Proceed directly to **Step 5**, using `rule_text` as the derived rule and `rule_type` as context for the scope heuristic.
+
 ## Step 3 — Load Model Configuration
 
 Read `$HOME/.copilot/model-config.md` (i.e. `~/.copilot/model-config.md`) to obtain the **expert** model name. Use that model for all `runSubagent` calls in Steps 4–6.
@@ -110,7 +121,12 @@ For the full directory paths to search per harness, see **[references/harness-ma
 
 ### Scope heuristic
 
-Applies to all harnesses:
+**General principle**: always start from the **nearest available location** and escalate outward only when no suitable file exists at the closer scope.
+
+- **Copilot / Claude**: begin at project level (`.github/instructions/` or `.claude/rules/`). Move to the intermediate user-local level (e.g. `%APPDATA%\Code\User\prompts\` for Copilot), then user-global, only when the rule is truly language- or framework-generic and not project-specific.
+- **Codex**: begin at the **nearest AGENTS.md** to the modified file (see _Nearest AGENTS.md Resolution_ in [references/harness-map.md](references/harness-map.md)). Fall back to the root `AGENTS.md` only when no closer file covers the relevant scope.
+
+Additional rules:
 
 - Correction is **project-specific** → prefer project-level file.
 - Correction is **language/framework-generic** → prefer user-level file (n/a for Codex).
