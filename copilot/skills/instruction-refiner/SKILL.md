@@ -1,20 +1,18 @@
 ---
 name: instruction-refiner
-description: "Use when: refining Copilot instructions from manual code corrections, learning from user edits, improving coding guidelines, analyzing diffs to update instruction files, updating agent or skill definitions, post-Copilot cleanup"
+description: "Use when: refining AI agent instructions from manual code corrections, learning from user edits, improving coding guidelines, analyzing diffs to update instruction files, updating agent or skill definitions, post-generation cleanup"
 argument-hint: "Optional path, file, or folder containing the manual corrections to analyze (omit to scan all uncommitted changes)"
 ---
 
 # Instruction Refiner
 
-Analyzes the user's manual corrections to Copilot-generated code and distills them into improved Copilot customization files — including instruction files, prompt files, agent definitions, and skill definitions — so that future generations better match the user's style and standards.
+Analyzes the user's manual corrections to AI-generated code and distills them into improved customization files — including instruction files, rules files, agent definitions, and skill definitions — so that future generations better match the user's style and standards. Works across Copilot, Claude, and Codex harnesses.
 
 ## When to Use
 
-- User has made manual corrections on top of Copilot-generated code and wants those corrections captured as instructions
-- User asks to improve or update a Copilot instruction file based on recent edits
-- User wants to prevent Copilot from repeating the same type of mistake
-- User wants a skill's workflow or scope updated to reflect new capabilities or corrected behavior
-- User wants an agent definition updated to better reflect its purpose, tools, or invocation triggers
+- User corrected AI-generated code and wants those patterns captured as instructions
+- User wants to update an instruction file, rules file, skill, or agent definition based on recent edits
+- User wants to prevent a recurring AI mistake by generalizing a correction into a rule
 
 ## Step 0 — Read Skill Memos and Resilience Protocol
 
@@ -22,9 +20,28 @@ Use the memory tool to read `/memories/skill-memos/instruction-refiner.md`. If t
 
 **Write-back rule** — whenever an unexpected problem arises during this execution and you resolve it, append a memo entry (`### Title — YYYY-MM-DD` / `**Problem**: …` / `**Fix**: …`) to the same file (create it if absent). If the file exceeds ~30 lines, consolidate old entries. See [skill-learning.instructions.md](../../instructions/skill-learning.instructions.md) for the full protocol.
 
-**Resilience protocol** — read and follow [resilience-protocol.instructions.md](../../instructions/resilience-protocol.instructions.md). Check `/memories/session/skill-progress.md` for a prior checkpoint matching this task. If one exists, offer to resume. Checkpoint your progress after every major step. Emit a brief status message to the user after every step.
+**Resilience protocol** — read and follow [resilience-protocol.instructions.md](../../instructions/resilience-protocol.instructions.md). Check `/memories/session/skill-progress.md` for a prior checkpoint for this skill and argument. If one exists, offer to resume. Checkpoint your progress after every major step. Emit a brief status message to the user after every step.
 
-## Step 1 — Collect the Changes
+## Step 1 — Identify the Active Harness
+
+Before doing any work, determine which harness is running this skill. Do not run shell commands for this — the answer is already in your context.
+
+Inspect the path from which this `SKILL.md` was loaded. It appears in your context as the `<file>` tag in the skills list, or as the path in the tool result that read this file.
+
+| If the load path contains… | Harness |
+|----------------------------|---------|
+| `/.copilot/skills/`        | **Copilot** |
+| `/.claude/skills/`         | **Claude**  |
+| `/.codex/skills/`          | **Codex**   |
+
+If the path is absent or ambiguous, ask the user:
+> _"Which harness is running this session — Copilot, Claude, or Codex?"_
+
+Write `HARNESS: copilot|claude|codex` to your session progress checkpoint and carry it forward into Steps 5 and 6. All harness-specific behavior in this skill depends on this value.
+
+See [references/harness-map.md](references/harness-map.md) for target paths, file formats, and the Codex authoring policy.
+
+## Step 2 — Collect the Changes
 
 Use the following decision tree to determine the diff source. In both cases, present a brief summary of the changes found (including whether they came from uncommitted work or the last commit) and confirm with the user before proceeding.
 
@@ -54,18 +71,18 @@ A commit message qualifies if it contains any of the following words (case-insen
 Examples that qualify: `"Fixed test output"`, `"Refined instructions"`, `"Improve naming conventions"`, `"Minor cleanup"`.
 If the message matches **only** purely unrelated keywords (e.g. `"Add new feature"`, `"Initial commit"`) it does **not** qualify — only look at HEAD, do not walk further back.
 
-## Step 2 — Load Model Configuration
+## Step 3 — Load Model Configuration
 
-Read `$HOME/.copilot/model-config.md` (i.e. `~/.copilot/model-config.md`) to obtain the **expert** model name. Use that model for all `runSubagent` calls in Steps 3–5.
+Read `$HOME/.copilot/model-config.md` (i.e. `~/.copilot/model-config.md`) to obtain the **expert** model name. Use that model for all `runSubagent` calls in Steps 4–6.
 
-## Step 3 — Interpret the Corrections
+## Step 4 — Interpret the Corrections
 
-> **Model routing**: Delegate this step and Steps 4–5 to a `runSubagent` call using the **expert** model obtained in Step 2. Pass the full diff and all context gathered so far as the subagent prompt. The subagent should return its analysis and proposed changes as structured text; the orchestrating agent then presents results to the user per the confirmation rules in Step 5.
+> **Model routing**: Delegate this step and Steps 5–6 to a `runSubagent` call using the **expert** model obtained in Step 3. Pass the full diff and all context gathered so far as the subagent prompt. The subagent should return its analysis and proposed changes as structured text; the orchestrating agent then presents results to the user per the confirmation rules in Step 6.
 
 For each change, determine:
 - **What pattern was corrected** (naming, structure, style, API usage, test approach, etc.).
 - **Why** the user likely made the change (infer intent from context).
-- **A generalized rule** that would prevent the same kind of Copilot output in the future.
+- **A generalized rule** that would prevent the same kind of output in the future.
 
 > **IMPORTANT**: If the intent behind a change is ambiguous or you cannot confidently map it to an instruction, **stop and ask the user** before proceeding. Never guess.
 
@@ -79,88 +96,83 @@ For each correction, follow this strict sequence:
 
 Never skip the open question. Never jump straight to logistics (where to place, how to phrase) before the user has confirmed that you understood the correction itself.
 
-## Step 4 — Locate the Best Customization File
+## Step 5 — Locate the Best Customization File
 
-Search for existing customization files in this order (least global → most global). Always explicitly list the contents of each location if it exists. After listing, identify the most relevant file based on the change's context.
+Use the `HARNESS` value from Step 1 to determine where to search. Always explicitly list the contents of each location if it exists. After listing, identify the most relevant file based on the change's context.
 
 Customization files include:
-- **Instruction files** (`*.instructions.md`) — coding rules and style guidelines.
-- **Prompt files** (`*.prompt.md`) — reusable prompt templates.
-- **Agent files** (`*.agent.md`) — agent mode definitions that control tools, behavior, and purpose.
+- **Instruction files** — coding rules and style guidelines (`*.instructions.md` for Copilot; `*.md` under `rules/` for Claude; `AGENTS.md` sections for Codex).
+- **Prompt files** (`*.prompt.md`) — reusable prompt templates (Copilot only).
+- **Agent files** (`*.agent.md`) — agent mode definitions (Copilot only).
 - **Skill files** (`SKILL.md`) — step-by-step workflow definitions invoked as named skills.
 
-1. **Workspace — project `.github/` folder**
-   - `.github/copilot-instructions.md`
-   - `.github/instructions/*.instructions.md`
-   - `.github/*.instructions.md`
-   - `.github/prompts/*`
-   - `.github/agents/*`
-   - `.github/skills/*`
-2. **VS Code user-level prompts**
-   - `%APPDATA%\Code\User\prompts\` (Windows)
-3. **IntelliJ Copilot (local)**
-   - `%LOCALAPPDATA%\github-copilot\intellij\`
-   - `%APPDATA%\github-copilot\intellij\` (check both)
-4. **GitHub Copilot CLI**
-   - `%USERPROFILE%\.copilot\` — check `agents/`, `skills/`, `prompts/`, and `instructions/` subfolders.
-5. **Any other known location** for Copilot customization files.
+For the full directory paths to search per harness, see **[references/harness-map.md — Target Paths](references/harness-map.md)**.
 
-When evaluating relevance:
-- If the correction is project-specific (e.g., AEM patterns, project test conventions) → prefer workspace-level.
-- If the correction is language/framework-generic (e.g., Java naming, Mockito style) → prefer user-level.
-- If the correction reveals a flaw in **how a skill drives a workflow** → update the relevant `SKILL.md`.
-- If the correction reveals a flaw in **how an agent is described, scoped, or triggered** → update the relevant `*.agent.md`.
-- If no customization file exists at the appropriate level, **ask the user** whether to create one and at which level.
+### Scope heuristic
 
-### Redundancy check — why was an existing rule ignored?
+Applies to all harnesses:
 
-After locating the relevant customization files, read them and cross-reference each derived rule (from Step 3) against the existing instructions. If a correction maps to a rule that **already exists**, do **not** simply report "this is already covered." Instead:
+- Correction is **project-specific** → prefer project-level file.
+- Correction is **language/framework-generic** → prefer user-level file (n/a for Codex).
+- Correction reveals a flaw in **how a skill drives a workflow** → update the relevant `SKILL.md`.
+- Correction reveals a flaw in **how an agent is described or triggered** → update the relevant agent definition.
+- If no file exists at the appropriate level, ask the user whether to create one and at which level.
+
+### Redundancy check — why an existing rule was not followed
+
+After locating the relevant customization files, read them and cross-reference each derived rule (from Step 4) against the existing instructions. If a correction maps to a rule that **already exists**, do **not** simply report "this is already covered." Instead:
 
 1. **Stop and think deeply** about *why* the existing instruction failed to prevent the mistake. Generate one or more hypotheses from the following (non-exhaustive) list:
    - **Phrasing is too vague or abstract** — the rule lacks a concrete example or uses ambiguous language that the model can interpret multiple ways.
    - **Buried in a long file** — the instruction file is so large that the rule gets diluted or falls outside the model's effective attention window.
    - **Poor structural placement** — the rule is in a section the model does not associate with the code context (e.g., a naming rule hidden in a "Testing" section).
    - **Contradicted or overshadowed** — another instruction elsewhere conflicts with or weakens this rule.
-   - **Wrong scope / `applyTo` mismatch** — the instruction file exists but its `applyTo` pattern does not match the files where the correction was needed.
+   - **Wrong scope / path key mismatch** — the instruction file exists but its `applyTo` (Copilot) or `paths` (Claude) pattern does not match the files where the correction was needed.
    - **Missing emphasis** — the rule is stated once without signaling its importance, so the model treats it as low-priority.
    - **No negative example** — the rule says what to do but not what to avoid; the model doesn't recognize the anti-pattern.
    - **Instruction file not loaded** — the `description` field doesn't match the task context, so the agent never discovers or loads the file.
 
 2. **Present the diagnosis to the user**: state which existing rule covers the correction, quote the relevant text, and list each hypothesis with a brief explanation of why it may apply.
 
-3. **Propose a concrete fix** for the most likely cause (e.g., rewrite the rule with an example, split the file, move the rule to a better section, add an `applyTo`, add a "DO NOT" counterpart). If multiple hypotheses are equally plausible, present each fix option separately and let the user choose.
+3. **Propose a concrete fix** for the most likely cause (e.g., rewrite the rule with an example, split the file, move the rule to a better section, correct the path key, add a "DO NOT" counterpart). If multiple hypotheses are equally plausible, present each fix option separately and let the user choose.
 
-4. **Wait for the user's approval** before making any changes. Do not skip this step even if the fix seems obvious.
+4. **Wait for the user's approval** before making any changes.
 
-## Step 5 — Draft Improvements
+## Step 6 — Draft Improvements
 
 1. Read the target customization file (or start a new one).
 2. Understand its existing structure, sections, and tone.
-3. Draft new rules or amend existing ones based on the file type:
+3. Before writing, verify the target directory exists (see **[harness-map.md — Safe-Write Guard](references/harness-map.md)**). If the directory is missing, warn the user and stop. Do not create parent directories silently.
+4. Draft new rules or amend existing ones based on the file type and **active harness** (from Step 1). For file format templates, see **[harness-map.md — File Formats](references/harness-map.md)**. Key behavioral rules by file type:
 
-   **For instruction files (`*.instructions.md`):**
+   **For Copilot instruction files (`*.instructions.md`):**
+   - YAML frontmatter keys: `description:` (string) and `applyTo:` (glob string; omit for always-on).
+   - **Never use `paths:` in a Copilot instructions file** — it is a Claude-only key.
    - **Be generic**: generalize specific corrections into broader, reusable rules.
    - **Add examples** when the rule would be unclear without one. Keep examples minimal (before → after).
    - **Preserve structure**: match the file's existing organization. If adding a new topic, create a clearly labeled section.
-   - **Write for both LLM and humans**: use clear headings, bullet points, and imperative voice.
+
+   **For Claude rules files (`rules/*.md`):**
+   - YAML frontmatter keys: `description:` (block scalar) and `paths:` (quoted string; omit for always-on).
+   - **Never use `applyTo:` in a Claude rules file** — it is a Copilot-only key.
+   - Follow the same style guidance as Copilot instruction files: generic, with examples, imperative voice.
+
+   **For Codex `AGENTS.md`:**
+   - **No YAML frontmatter** — these are plain Markdown files.
+   - If the file carries an `<!-- Auto-generated by export.mjs -->` header, consult the Codex Authoring Policy in [references/harness-map.md](references/harness-map.md) before editing directly.
 
    **For skill files (`SKILL.md`):**
    - Amend the step that corresponds to the flawed behavior.
    - If the skill is missing a capability the user expects, add a new step or expand an existing one.
    - Update `description` and `argument-hint` in the YAML frontmatter if the skill's scope changes.
 
-   **For agent files (`*.agent.md`):**
+   **For agent files (`*.agent.md`) — Copilot only:**
    - Update the agent's `description` if its purpose or invocation triggers are wrong.
    - Add or remove tools, constraints, or behavioral guidance to reflect the user's intent.
-   - If the agent should be invoked in different situations, update trigger language accordingly.
 
-4. If there is more than one proposed change, present and confirm them **one at a time** following the confirmation protocol from Step 3:
-   - First, present the proposed change with an **open question**: *"Here is the change I'd like to make: [description]. Did I get this right? Write back any comments or corrections."*
-   - Wait for the user to confirm the interpretation before asking any follow-up questions about placement, wording, or scope.
-   - Apply (or revise based on feedback), then move on to the next change.
-   - Never present a list of all changes at once.
+5. If there is more than one proposed change, present and confirm them **one at a time** following the confirmation protocol from Step 4. Never present a list of all changes at once.
 
-## Step 6 — Verify the Instructions
+## Step 7 — Verify the Instructions
 
 After the user approves and the instruction file is updated:
 
@@ -173,7 +185,7 @@ After the user approves and the instruction file is updated:
    - Repeat (up to 3 iterations).
 5. **Always restore** the code file to the user's last manual version after verification — never leave regenerated content in place.
 
-## Step 7 — Finalize
+## Step 8 — Finalize
 
 - Summarize all instruction changes made.
 - List the files modified.
@@ -187,6 +199,10 @@ After the user approves and the instruction file is updated:
 - **DO NOT** add instructions that contradict existing ones without flagging the conflict.
 - **DO NOT** remove existing instructions unless the user explicitly asks.
 - **ALWAYS** restore code files to the user's version after verification.
+- **Never write `applyTo:` to a Claude rules file** (`~/.claude/rules/*.md`) — Claude uses `paths:`, not `applyTo:`.
+- **Never write `paths:` to a Copilot instructions file** (`*.instructions.md`) — Copilot uses `applyTo:`, not `paths:`.
+- **Never add YAML frontmatter to a Codex `AGENTS.md`** — these files are plain Markdown.
+- **Prefer basket source + `export.mjs`** over direct edits to Codex `AGENTS.md` files when the basket repo is accessible. Direct edits are overwritten on the next install.
 
 ## Output Format
 
