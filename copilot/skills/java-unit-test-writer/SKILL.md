@@ -34,7 +34,7 @@ This prevents context accumulation across classes, which is the primary cause of
 Read the shared model config to get model names for the two-tier workflow:
 
 ```
-read_file: $HOME/.copilot/model-config.md
+read_file: ../../model-config.md
 ```
 
 Extract both model names from the **Roles** table:

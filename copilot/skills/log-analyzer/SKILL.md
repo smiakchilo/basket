@@ -35,7 +35,7 @@ $logFile  = "path\to\aemerror.log"
 Read the shared model config to get model names for the two-tier workflow:
 
 ```
-read_file: $HOME/.copilot/model-config.md
+read_file: ../../model-config.md
 ```
 
 Extract the `worker` and `expert` model names from the **Roles** table. These are used in the [Two-Phase Workflow](#two-phase-workflow) below.

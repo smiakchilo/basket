@@ -84,7 +84,7 @@ When another skill (e.g. `comment-processor`) has already derived a rule and con
 
 ## Step 3 — Load Model Configuration
 
-Read `$HOME/.copilot/model-config.md` (i.e. `~/.copilot/model-config.md`) to obtain the **expert** model name. Use that model for all `runSubagent` calls in Steps 4–6.
+Read `../../model-config.md` to obtain the **expert** model name. Use that model for all `runSubagent` calls in Steps 4–6.
 
 ## Step 4 — Interpret the Corrections
 

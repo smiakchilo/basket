@@ -1,6 +1,6 @@
 # Model Configuration
 
-Shared model roles for skills that use two-tier model routing. Any skill can read this file via `$HOME/.copilot/model-config.md` and map its own phases to these generic tiers.
+Shared model roles for skills that use two-tier model routing. Any skill can read this file via `../../model-config.md` (relative to the skill's directory) and map its own phases to these generic tiers.
 
 ## Roles
 

@@ -54,7 +54,7 @@ Execution is identical to Mode A (or whichever mode the user also triggered — 
 Read the shared model config to get model names for the two-tier workflow:
 
 ```
-read_file: $HOME/.copilot/model-config.md
+read_file: ../../model-config.md
 ```
 
 Extract the `worker` and `expert` model names from the **Roles** table. Use these when constructing `runSubagent` calls in Phase 3 and Phase 4.

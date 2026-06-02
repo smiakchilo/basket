@@ -37,7 +37,7 @@ Read and follow [Resilience Protocol](../../instructions/resilience-protocol.ins
 
 ### 0.3 Model Configuration
 
-Read `$HOME/.copilot/model-config.md` to obtain the **expert** model name. Use it for all `runSubagent` calls in Steps 3 and 6.
+Read `../../model-config.md` to obtain the **expert** model name. Use it for all `runSubagent` calls in Steps 3 and 6.
 
 ### 0.4 Verify GitHub CLI
 

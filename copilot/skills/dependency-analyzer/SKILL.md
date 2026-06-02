@@ -23,7 +23,7 @@ Retrieve and unpack source code for external Maven dependencies so the agent can
 Read the shared model config to get model names:
 
 ```
-read_file: $HOME/.copilot/model-config.md
+read_file: ../../model-config.md
 ```
 
 Extract the **worker** model name from the **Roles** table.

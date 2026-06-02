@@ -498,4 +498,15 @@ console.log('Exporting skills...\n');
 exportClaudeSkills(skillNames);
 console.log();
 exportCodexSkills(skillNames, instructions);
+
+// Copy model-config.md into each harness root so skills can reach it via ../../model-config.md
+const modelConfigSrc = join(ROOT, 'copilot', 'model-config.md');
+if (existsSync(modelConfigSrc)) {
+  const src = readFileSync(modelConfigSrc);
+  writeFileSync(join(CLAUDE_DIR, 'model-config.md'), src);
+  writeFileSync(join(CODEX_DIR,  'model-config.md'), src);
+  console.log('\n  claude/model-config.md');
+  console.log('  codex/model-config.md');
+}
+
 console.log('\nDone.');
