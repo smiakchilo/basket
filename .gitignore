@@ -3,3 +3,7 @@
 claude/
 codex/
 node_modules/
+
+.claude-projects
+.codex-projects
+.copilot-projects

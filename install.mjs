@@ -11,18 +11,12 @@
 import {
   existsSync,
   readFileSync,
-  copyFileSync,
   cpSync,
   mkdirSync,
-  readdirSync,
-  statSync,
 } from 'fs';
 import { join, resolve, dirname } from 'path';
 import { fileURLToPath } from 'url';
 import { spawnSync } from 'child_process';
-import os from 'os';
-
-const HOME = os.homedir();
 
 const BASKET = (() => {
   const idx = process.argv.indexOf('--basket-root');
@@ -56,17 +50,15 @@ function copyDir(src, dest, label) {
 }
 
 /**
- * Copies a single file, creating parent directories as needed.
- * Silently skips if src does not exist.
+ * Reads a project-list file and returns an array of non-blank, non-comment lines.
+ * Returns null if the file does not exist.
  */
-function copyOne(src, dest, label) {
-  if (!existsSync(src)) {
-    console.log(`  skip (source absent): ${label}`);
-    return;
-  }
-  ensureDir(dirname(dest));
-  copyFileSync(src, dest);
-  console.log(`  copied: ${label}`);
+function readProjectList(filePath) {
+  if (!existsSync(filePath)) return null;
+  return readFileSync(filePath, 'utf8')
+    .split(/\r?\n/)
+    .map(l => l.trim())
+    .filter(l => l && !l.startsWith('#'));
 }
 
 /* ----
@@ -85,129 +77,117 @@ if (exportResult.status !== 0) {
 }
 console.log();
 
-// Step 1 — ~/.copilot
-const copilotHome = join(HOME, '.copilot');
-if (existsSync(copilotHome)) {
-  console.log('Step 1: Updating ~/.copilot ...');
-  copyDir(
-    join(BASKET, 'copilot'),
-    copilotHome,
-    '~/.copilot ← copilot/',
-  );
-} else {
-  console.log('Step 1: ~/.copilot not found — skipped.');
-}
-console.log();
+let anyInstalled = false;
 
-// Step 2 — ~/.claude
-const claudeHome = join(HOME, '.claude');
-if (existsSync(claudeHome)) {
-  console.log('Step 2: Updating ~/.claude ...');
-  copyDir(
-    join(BASKET, 'claude'),
-    claudeHome,
-    '~/.claude ← claude/',
-  );
-  copyDir(
-    join(BASKET, 'copilot', 'agents'),
-    join(claudeHome, 'agents'),
-    '~/.claude/agents ← copilot/agents/',
-  );
-  copyDir(
-    join(BASKET, 'copilot', 'skills'),
-    join(claudeHome, 'skills'),
-    '~/.claude/skills ← copilot/skills/',
-  );
-  copyDir(
-    join(BASKET, 'claude', 'skills'),
-    join(claudeHome, 'skills'),
-    '~/.claude/skills ← claude/skills/ (rewritten .md overlay)',
-  );
-  // Copy loose files directly under copilot/ (non-directories)
-  for (const entry of readdirSync(join(BASKET, 'copilot'))) {
-    const src = join(BASKET, 'copilot', entry);
-    if (statSync(src).isFile()) {
-      copyOne(src, join(claudeHome, entry), `~/.claude/${entry} ← copilot/${entry}`);
-    }
-  }
-} else {
-  console.log('Step 2: ~/.claude not found — skipped.');
-}
-console.log();
-
-// Step 3 — Codex projects
-const codexProjectsFile = join(BASKET, '.codex-projects');
-if (!existsSync(codexProjectsFile)) {
-  console.log('Step 3: .codex-projects not found — skipped.');
-} else {
-  console.log('Step 3: Installing into codex projects ...');
-
-  const projectPaths = readFileSync(codexProjectsFile, 'utf8')
-    .split(/\r?\n/)
-    .map(l => l.trim())
-    .filter(l => l && !l.startsWith('#'));
-
-  // Collect seeding candidates: codex/*--AGENTS.md (skip plain AGENTS.md)
-  const seedFiles = readdirSync(join(BASKET, 'codex'))
-    .filter(f => f.endsWith('--AGENTS.md'));
-
-  for (const projectPath of projectPaths) {
-    const dotCodex = join(projectPath, '.codex');
-    if (!existsSync(dotCodex)) {
-      console.log(`  skip (no .codex/): ${projectPath}`);
-      continue;
-    }
-
-    console.log(`  project: ${projectPath}`);
-
-    // codex/AGENTS.md → {project}/.codex/AGENTS.md
-    copyOne(
-      join(BASKET, 'codex', 'AGENTS.md'),
-      join(dotCodex, 'AGENTS.md'),
-      '.codex/AGENTS.md',
-    );
-
-    // agents/ and skills/
-    copyDir(
-      join(BASKET, 'copilot', 'agents'),
-      join(dotCodex, 'agents'),
-      '.codex/agents ← copilot/agents/',
-    );
-    copyDir(
-      join(BASKET, 'copilot', 'skills'),
-      join(dotCodex, 'skills'),
-      '.codex/skills ← copilot/skills/',
-    );
-    copyDir(
-      join(BASKET, 'codex', 'skills'),
-      join(dotCodex, 'skills'),
-      '.codex/skills ← codex/skills/ (rewritten .md overlay)',
-    );
-
-    // Seed *--AGENTS.md → project subdirectories
-    for (const seedFile of seedFiles) {
-      // e.g. "core--src--test--AGENTS.md" → segments ["core","src","test"]
-      const parts = seedFile.split('--');
-      const segments = parts.slice(0, -1); // drop trailing "AGENTS.md"
-      if (segments.length === 0) continue;
-
-      const targetDir = join(projectPath, ...segments);
-      if (!existsSync(targetDir)) {
-        console.log(`    skip (dir absent): ${segments.join('/')}/AGENTS.md`);
+// Step 1 — .copilot-projects → {project}/.github
+{
+  const listFile = join(BASKET, '.copilot-projects');
+  const projects = readProjectList(listFile);
+  if (!projects) {
+    console.log('Step 1: .copilot-projects not found — skipped.');
+  } else if (projects.length === 0) {
+    console.log('Step 1: .copilot-projects is empty — skipped.');
+  } else {
+    console.log('Step 1: Installing into copilot projects (.github) ...');
+    for (const projectPath of projects) {
+      if (!existsSync(projectPath)) {
+        console.warn(`  warn: project path not found — ${projectPath}`);
         continue;
       }
-      copyOne(
-        join(BASKET, 'codex', seedFile),
-        join(targetDir, 'AGENTS.md'),
-        `${segments.join('/')}/AGENTS.md`,
+      console.log(`  project: ${projectPath}`);
+      copyDir(
+        join(BASKET, 'copilot'),
+        join(projectPath, '.github'),
+        `.github ← copilot/`,
       );
+      anyInstalled = true;
     }
   }
 }
 console.log();
+
+// Step 2 — .claude-projects → {project}/.claude
+{
+  const listFile = join(BASKET, '.claude-projects');
+  const projects = readProjectList(listFile);
+  if (!projects) {
+    console.log('Step 2: .claude-projects not found — skipped.');
+  } else if (projects.length === 0) {
+    console.log('Step 2: .claude-projects is empty — skipped.');
+  } else {
+    console.log('Step 2: Installing into claude projects (.claude) ...');
+    for (const projectPath of projects) {
+      if (!existsSync(projectPath)) {
+        console.warn(`  warn: project path not found — ${projectPath}`);
+        continue;
+      }
+      console.log(`  project: ${projectPath}`);
+      copyDir(
+        join(BASKET, 'claude'),
+        join(projectPath, '.claude'),
+        `.claude ← claude/`,
+      );
+      copyDir(
+        join(BASKET, 'copilot', 'skills'),
+        join(projectPath, '.claude', 'skills'),
+        `.claude/skills ← copilot/skills/ (overlay)`,
+      );
+      copyDir(
+        join(BASKET, 'claude', 'skills'),
+        join(projectPath, '.claude', 'skills'),
+        `.claude/skills ← claude/skills/ (overlay)`,
+      );
+      anyInstalled = true;
+    }
+  }
+}
+console.log();
+
+// Step 3 — .codex-projects → {project}/.codex
+{
+  const listFile = join(BASKET, '.codex-projects');
+  const projects = readProjectList(listFile);
+  if (!projects) {
+    console.log('Step 3: .codex-projects not found — skipped.');
+  } else if (projects.length === 0) {
+    console.log('Step 3: .codex-projects is empty — skipped.');
+  } else {
+    console.log('Step 3: Installing into codex projects (.codex) ...');
+    for (const projectPath of projects) {
+      if (!existsSync(projectPath)) {
+        console.warn(`  warn: project path not found — ${projectPath}`);
+        continue;
+      }
+      console.log(`  project: ${projectPath}`);
+      copyDir(
+        join(BASKET, 'codex'),
+        join(projectPath, '.codex'),
+        `.codex ← codex/`,
+      );
+      copyDir(
+        join(BASKET, 'copilot', 'skills'),
+        join(projectPath, '.codex', 'skills'),
+        `.codex/skills ← copilot/skills/ (overlay)`,
+      );
+      copyDir(
+        join(BASKET, 'codex', 'skills'),
+        join(projectPath, '.codex', 'skills'),
+        `.codex/skills ← codex/skills/ (overlay)`,
+      );
+      anyInstalled = true;
+    }
+  }
+}
+console.log();
+
+if (!anyInstalled) {
+  console.error('ERROR: No projects were installed. Create at least one of .copilot-projects, .claude-projects, or .codex-projects with valid project paths.');
+  process.exit(1);
+}
 
 console.log('Install complete.\n');
 console.log('Next steps:');
 console.log('  • Edit files under copilot/instructions/ or copilot/skills/');
 console.log('  • Run "node export.mjs" (or "npm run export") to regenerate claude/ and codex/');
+console.log('  • Add project paths to .copilot-projects, .claude-projects, or .codex-projects');
 console.log('  • Commit and push — others clone and run "node install.mjs"');
