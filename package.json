@@ -2,10 +2,10 @@
   "name": "basket",
   "version": "1.0.0",
   "type": "module",
-  "description": "Cross-harness AI agent configuration (GitHub Copilot, Claude Code, Codex CLI)",
+  "description": "Cross-harness AI agent configuration (GitHub Copilot, Claude Code, Codex CLI) for AEM development",
   "scripts": {
     "export": "node export.mjs",
-    "setup": "node setup.mjs"
+    "install": "node install.mjs"
   },
   "dependencies": {
     "js-yaml": "^4.1.0"

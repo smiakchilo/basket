@@ -18,7 +18,7 @@ codex/AGENTS.md         ← generated Codex CLI instructions
 
 `export.mjs` reads every `.instructions.md` file, strips the Copilot-specific frontmatter, and writes the appropriate format for Claude Code and Codex CLI. Re-run it whenever you change anything under `copilot/`.
 
-`setup.mjs` wires the repo into your home directory so each AI harness can find its config without manual copying.
+`install.mjs` copies the generated files into your home directory and any registered projects so each AI harness can find its config without manual setup.
 
 ## Prerequisites
 
@@ -36,23 +36,38 @@ cd basket
 # 2. Install dependencies
 npm install
 
-# 3. Wire everything up (export + symlinks/junctions)
-node setup.mjs
+# 3. Copy everything into place
+node install.mjs
 ```
 
-`setup.mjs` does the following:
+`install.mjs` does the following:
 
-| Step | What it creates |
-|------|----------------|
-| 1 | Runs `export.mjs` to seed `claude/` and `codex/` |
-| 2 | `~/.copilot` → `<basket>/copilot/` |
-| 3 | `~/.claude/rules` → `<basket>/claude/rules/` |
-| 4 | `~/.claude/skills` → `<basket>/copilot/skills/` |
-| 5 | Copies `claude/CLAUDE.md` → `~/.claude/CLAUDE.md` |
+| Step | Condition | What it does |
+|------|-----------|-------------|
+| 0 | always | Runs `export.mjs` to regenerate `claude/` and `codex/` |
+| 1 | `~/.copilot` exists | Copies `copilot/` → `~/.copilot/` (overwrite) |
+| 2 | `~/.claude` exists | Copies `claude/` + `copilot/agents/` + `copilot/skills/` → `~/.claude/` |
+| 3 | `.codex-projects` exists | For each registered project path (see below) |
 
-It is safe to re-run: existing links that already point to the correct target are skipped, and any conflicting file or directory is renamed to `<name>.bak` before being replaced.
+It is safe to re-run: copies overwrite matching files while leaving destination-only files untouched.
 
-> **Windows note:** directory links are created as junctions, which do not require administrator privileges.
+### Registering projects for Codex CLI
+
+Create a `.codex-projects` file in the basket root, one absolute project path per line:
+
+```
+C:/Projects/my-aem-project
+C:/Projects/another-project
+# lines starting with # are ignored
+```
+
+For each listed path, if a `.codex/` folder already exists under it, `install.mjs` will:
+
+- Copy `codex/AGENTS.md` → `{project}/.codex/AGENTS.md`
+- Copy `copilot/agents/` → `{project}/.codex/agents/`
+- Copy `copilot/skills/` → `{project}/.codex/skills/`
+- Seed each `*--AGENTS.md` file from `codex/` into the matching project subdirectory
+  (e.g. `core--src--test--AGENTS.md` → `{project}/core/src/test/AGENTS.md`; skipped if that directory doesn't exist)
 
 ## Everyday workflow
 
@@ -63,7 +78,7 @@ It is safe to re-run: existing links that already point to the correct target ar
 # Regenerate derived outputs
 npm run export
 
-# Commit and push — teammates clone and run node setup.mjs
+# Commit and push — teammates clone and run node install.mjs
 git add -A && git commit -m "..."
 ```
 
@@ -72,7 +87,8 @@ git add -A && git commit -m "..."
 ```
 basket/
 ├── export.mjs                        # Translates copilot/ → claude/ and codex/
-├── setup.mjs                         # One-command machine setup
+├── install.mjs                       # One-command machine install (file copies)
+├── .codex-projects                   # Optional: list of project paths for Codex CLI
 ├── package.json
 ├── copilot/
 │   ├── instructions/
@@ -113,4 +129,4 @@ basket/
 | Command | Description |
 |---------|-------------|
 | `npm run export` | Regenerate `claude/` and `codex/` from `copilot/` |
-| `npm run setup` | Alias for `node setup.mjs` (export + symlinks) |
+| `npm run install` | Alias for `node install.mjs` (export + copy into home / projects) |
