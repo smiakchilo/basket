@@ -27,7 +27,7 @@ Additional labels (appended to severity):
 ## Analysis Passes
 
 Before Pass 1, build an internal coding-standards checklist from the `## Instruction Summaries`
-and `## Instruction Files (Full)` sections of Phase 1 output. This checklist is not returned
+and `## Instruction Files (Full)` sections of Phase 3 output. This checklist is not returned 
 but drives the analysis. For any file present in `## Instruction Files (Full)`, produce a
 compact bullet-point summary (checklist items only, no prose) and return it in
 `## New Instruction Summaries` so the orchestrator can persist it to the cache.
@@ -40,21 +40,21 @@ Before examining individual files, understand the change **as a whole**. This is
 "incomplete implementation", "wrong approach", and "missing dependent changes" — issues that
 per-file analysis alone will miss.
 
-#### 1a. Infer intent
+#### 1.1 Infer intent
 
 Read all commit messages and any PR/branch description. Answer internally:
 - What is this branch trying to accomplish? (bugfix, new feature, refactor, config change, dependency update)
 - Is the approach sound for the stated goal?
 - Does the set of changed files make sense for this goal, or are there suspicious omissions?
 
-#### 1b. Map the blast radius
+#### 1.2 Map the blast radius
 
 From the `--stat` diff, identify which modules, packages, and component types are touched.
 For each changed public API (method signature, model property, service interface, HTL contract,
 exported JS function), search the codebase for all consumers and list them. These consumers
 are candidates for Pass 2 cross-file data-flow checks.
 
-#### 1c. Negative-space analysis
+#### 1.3 Negative-space analysis
 
 Explicitly ask: **"What _should_ have changed but didn't?"** Check for:
 - A model API changed in `core/` but the HTL template in `ui.apps/` that consumes it was not updated
@@ -66,7 +66,7 @@ Explicitly ask: **"What _should_ have changed but didn't?"** Check for:
 
 Each missing change is a finding (typically Critical or Major).
 
-#### 1d. Cross-file data-flow map
+#### 1.4 Cross-file data-flow map
 
 For each non-trivial code change, trace the data flow across file boundaries:
 - **Inputs**: Where does this code get its data? (JCR properties, request parameters, OSGi config, injected service, upstream caller)
@@ -91,12 +91,12 @@ the diff hunks. Use search tools extensively to trace relationships.
 
 > **Similar-issue sweep**: Whenever you discover an issue or formulate a suggestion (e.g., an NPE vulnerability, a suspicious method call, a missing null-check, an unsafe pattern), immediately search the rest of the code under review for the **same or analogous pattern**. All similar occurrences must be reported together as a single grouped finding that lists every affected location, rather than as separate findings scattered across the report. This applies equally to issues of every severity and to suggestions.
 
-#### 2a. Context and impact
+#### 2.1 Context and impact
 
 - Understand the file's role: its class/module purpose, dependencies, and consumers.
 - Cross-reference with Pass 1's blast-radius map: is this file a producer or consumer of a changed API? Are all its callers/callees accounted for in the branch?
 
-#### 2b. Correctness and logic (highest priority)
+#### 2.2 Correctness and logic (highest priority)
 
 - **Local logic**: Off-by-one errors, null-safety, race conditions, resource leaks (unclosed `ResourceResolver`, `Session`, `InputStream` — must use try-with-resources or explicit close in finally).
 - **Error handling**: Silent catches, swallowed exceptions, catches that log but don't re-throw when the caller depends on failure propagation.
@@ -106,7 +106,7 @@ the diff hunks. Use search tools extensively to trace relationships.
 - **Logging levels**: `error`/`warn` only for genuinely unexpected failures. Routine conditions (resource not found, optional data absent) should be `debug`/`info`. High-frequency code paths should not log at `info` or above.
 - **Annotation correctness**: Proper use of Java, OSGi, Sling annotations per the project's `aem-sling.instructions.md`.
 
-#### 2c. Security (new/modified code only)
+#### 2.3 Security (new/modified code only)
 
 Verify compliance with the `aem-sling.instructions.md` Security rules. Also check:
 
@@ -116,7 +116,7 @@ Verify compliance with the `aem-sling.instructions.md` Security rules. Also chec
 
 Label each finding **[Security]**.
 
-#### 2d. Runtime performance
+#### 2.4 Runtime performance
 
 - Uncached or repeated `ResourceResolver` / JCR operations, N+1 queries
 - Expensive operations inside loops (adaptTo, service lookups, JCR queries)
@@ -127,13 +127,13 @@ Label each finding **[Security]**.
 
 Label each finding **[Performance]**.
 
-#### 2e. Coding standards compliance
+#### 2.5 Coding standards compliance
 
-Apply every rule from the instruction files loaded in Phase 1. Cite the specific rule for each violation.
+Apply every rule from the instruction files loaded in Phase 3. <!-- refined: "Phase 1" corrected to "Phase 3" --> Cite the specific rule for each violation.
 
 - **Documentation drift**: When code changes, verify Javadoc/JSDoc `@param`, `@return`, `@throws`, and prose still match the implementation. Stale docs after refactoring are actively harmful.
 
-#### 2f. Consistency with existing patterns
+#### 2.6 Consistency with existing patterns
 
 - Search for analogous code (e.g., all existing servlets if a new servlet is added). Verify the new code follows the same patterns.
 - If the change deviates from established conventions, flag it — unless the deviation is clearly an improvement (then suggest applying it consistently).
@@ -141,7 +141,7 @@ Apply every rule from the instruction files loaded in Phase 1. Cite the specific
 
 Label each finding **[Consistency]**.
 
-#### 2g. Full-file ripple effects (code files only)
+#### 2.7 Full-file ripple effects (code files only)
 
 For Java, JavaScript, and TypeScript files, extend analysis beyond the changed lines:
 - Does the change break assumptions, invariants, or control-flow that other methods in the same file rely on?
@@ -177,28 +177,28 @@ After completing per-file analysis, re-examine the change as a whole.
 
 > **Reasoning discipline**: Before finalizing the report, reconsider — is there a subtle interaction between any two findings that compounds into a larger issue?
 
-#### 3a. Inter-file contradictions
+#### 3.1 Inter-file contradictions
 
 Look for cases where one file assumes something that another file contradicts:
 - Model returns a different type/structure than the template expects
 - Service provides data in a format that the caller doesn't handle
 - Config enables a feature that the code doesn't fully implement
 
-#### 3b. Missing coordination
+#### 3.2 Missing coordination
 
 If the same API or pattern was changed in N places, verify it was changed in all N+1 necessary places. Incomplete renames, partial migrations, and forgotten call sites are common.
 
-#### 3c. Architectural coherence
+#### 3.3 Architectural coherence
 
 Does the change as a whole make architectural sense? Does it introduce unnecessary coupling, circular dependencies, or responsibility violations? Is there a simpler approach that would achieve the same goal?
 
 ## Constraints
 
 - **DO NOT** flag, report, or comment on missing unit tests, missing tests, or test coverage gaps. Testing concerns are strictly out of scope for this review.
-- **DO NOT** run git commands. All git data is in the Phase 1 output passed to you.
+- **DO NOT** run git commands. All git data is in the Phase 3 output passed to you.
 - **DO NOT** run build commands (mvn, npm, etc.).
 - **DO NOT** hallucinate findings. Every issue must be traceable to a specific line in the diff, a specific rule from the instructions, or a specific pattern found via search.
-- **DO NOT** (Mode A) flag issues in code that was NOT changed in this branch, **except**: (a) for code files (Java, JS, TS), you may flag non-changed lines when those findings arise directly from an indirect behavioral consequence of the modification or a pattern inconsistency introduced by it — cite the connection explicitly; (b) you **must** flag files that _should_ have been changed but weren't (negative-space analysis from Pass 1c) — these are completeness gaps, not per-line findings, and go in the Completeness Gaps section.
+- **DO NOT** (Mode A) flag issues in code that was NOT changed in this branch, **except**: (a) for code files (Java, JS, TS), you may flag non-changed lines when those findings arise directly from an indirect behavioral consequence of the modification or a pattern inconsistency introduced by it — cite the connection explicitly; (b) you **must** flag files that _should_ have been changed but weren't (negative-space analysis from Pass 1.3) — these are completeness gaps, not per-line findings, and go in the Completeness Gaps section.
 - **DO NOT** (Mode B) flag issues in files outside the target file or folder. You may READ the entire codebase for context, but every reported finding must be located within the specified file or within the specified folder.
 - **DO NOT** produce a shallow review. If you only find style issues, dig deeper. Analyze logic, data flow, error paths, edge cases.
 - **DO NOT** add to the report observations that are just factual statements about the change or some approval — focus on concerns, possible problematic implications, and recommendations.
@@ -209,7 +209,7 @@ Does the change as a whole make architectural sense? Does it introduce unnecessa
 Return structured findings only — do NOT write the formatted report.
 Execution-path traces are internal reasoning. Do NOT include trace steps in output.
 
-For any instruction file that was a **cache miss** (full content in Phase 1 `## Instruction Files (Full)`),
+For any instruction file that was a **cache miss** (full content in Phase 3 `## Instruction Files (Full)`),
 include a compact bullet-point summary in your output:
 
 ```

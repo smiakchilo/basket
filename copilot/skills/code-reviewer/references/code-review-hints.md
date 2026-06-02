@@ -26,11 +26,11 @@ When a loop filters then transforms elements of a collection, check whether the 
 
 ### Interface exception suppression
 
-When reviewing an implementation of an interface method that declares a checked exception, check whether the override catches that exception internally. If it does, verify it re-throws or wraps it  not returns a sentinel. Trace any sentinel return value to its consumers and flag every site that assumes non-null/non-empty without an explicit guard.
+When reviewing an implementation of an interface method that declares a checked exception, check whether the override catches that exception internally. If it does, verify it re-throws or wraps it — not return a sentinel. Trace any sentinel return value to its consumers and flag every site that assumes non-null/non-empty without an explicit guard.
 
 ### Multi-level null / bounds propagation
 
-A null-check or validation guard at one layer does not protect the layers below it. When reviewing code that dereferences values across multiple call levels, trace the full chain  a non-null wrapper can still yield a null field; a validated input can still produce an out-of-range index; a non-null collection can still be empty. For every guard, ask: what can the *next* call in the chain return that would cause an NPE, IllegalArgumentException, IndexOutOfBoundsException, or silent misbehavior?
+A null-check or validation guard at one layer does not protect the layers below it. When reviewing code that dereferences values across multiple call levels, trace the full chain — a non-null wrapper can still yield a null field; a validated input can still produce an out-of-range index; a non-null collection can still be empty. For every guard, ask: what can the *next* call in the chain return that would cause an NPE, IllegalArgumentException, IndexOutOfBoundsException, or silent misbehavior?
 
 ### Exception guard consistency
 

@@ -21,7 +21,7 @@ Review a **single file or folder** specified by the user (e.g., "review this fil
 - **Scope of findings**: Report issues ONLY for the specified file or files within the specified folder. Do NOT report issues in other files.
 - **Scope of context**: Still read and search the broader codebase to understand the file(s)' dependencies, consumers, related patterns, and cross-module relationships. This context informs your analysis but does not expand the scope of reported findings.
 - **Diff awareness**: If the file(s) have uncommitted or branch-level changes, focus your review on those changes. If there are no changes (the user wants a review of the file or folder as-is), review the entire file or folder content against coding standards, correctness, and consistency.
-- **Phase 3 scope**: Skip `collect-diff.ps1` (steps 1–5) unless the file(s) have branch-level changes you need to isolate. Instruct the worker to read the target file(s) directly instead.
+- **Phase 3 scope**: Skip `collect-diff.ps1` (steps 1–4) unless the file(s) have branch-level changes you need to isolate — proceed directly to step 5 (instruction files). Instruct the worker to read the target file(s) directly instead. 
 - **Phase 4 scope**: Skip Pass 1 (holistic understanding) and begin at Pass 2 (per-file analysis); skip Pass 3 (cross-cutting synthesis) unless the target is a folder with multiple files.
 - **Phase 6 adjustments**: The report title should reference the file path or folder path instead of a branch name. The commits table and Completeness Gaps section are omitted unless relevant. The verdict applies to the single file or folder.
 
@@ -130,8 +130,9 @@ The following subsections (3.1–3.3) govern instruction-file loading, performed
 Search for and read every file matching these patterns in the workspace:
 - `.github/copilot-instructions.md`
 - `.github/instructions/**`
-- `.github/agents/**`
-- Any `*.instructions.md` file in the repository root or `.github/` tree
+- `CLAUDE.md` in the workspace root
+- `.claude/rules/**`
+- `AGENTS.md` in the workspace root and in any subdirectory (e.g. `core/AGENTS.md`, `core/src/test/AGENTS.md`, etc.)
 
 #### 3.2 User-level / global instructions (if accessible)
 
@@ -395,9 +396,9 @@ Instructions:
    For each file present in "## Instruction Files (Full)", produce a compact
    bullet-point summary (checklist items only, no prose) and include it in
    "## New Instruction Summaries" in your output.
-4. Execute all three analysis passes (Pass 1 Holistic, Pass 2 Per-File, Pass 3
-   Cross-Cutting) from Phase 4 of the skill. Apply Mode B scope adjustments if
-   applicable.
+4. Execute analysis passes per the review mode:
+   - **Mode A / C / D**: all three passes (Pass 1 Holistic, Pass 2 Per-File, Pass 3 Cross-Cutting).
+   - **Mode B**: skip Pass 1 entirely; begin at Pass 2. Skip Pass 3 unless the target is a folder with multiple files. <!-- refined: "Apply Mode B scope adjustments if applicable" was too vague to resolve correctly -->
 5. Where pass instructions reference a git command, read the equivalent section
    from Phase 3 output instead (e.g., "## Commits" for git log).
 6. Return structured findings only — do NOT write the formatted report.
@@ -442,7 +443,7 @@ runSubagent(
 
 **Skip this phase only when the user triggered Mode E (fast/light review). Execute by default for all other reviews.**
 
-After Phase 4 returns its structured findings, launch a second expert subagent with the **expert** model. Its sole mandate is to find what Phase 4 missed. <!-- refined: "Phase 2 missed" corrected to "Phase 4 missed" --> Fill in the placeholders and pass this as the `prompt` to `runSubagent`. Before sending, replace `{{SKILL_DIR}}` with the resolved absolute path of the directory containing this SKILL.md file:
+After Phase 4 returns its structured findings, launch a second expert subagent with the **expert** model. Its sole mandate is to find what Phase 4 missed. Fill in the placeholders and pass this as the `prompt` to `runSubagent`. Before sending, replace `{{SKILL_DIR}}` with the resolved absolute path of the directory containing this SKILL.md file:
 
 ```
 You are a senior staff engineer performing a second-opinion code review.
@@ -623,7 +624,7 @@ Review report saved to: ./.reviews/<filename>.md
 ```
 
 
-Constraints
+## Constraints
 
 - **DO NOT** modify any source code, test, configuration, or build file. The review is read-only analysis. The ONLY file you create is the review report in `./.reviews/`.
 - **DO NOT** flag, report, or comment on missing unit tests, missing tests, or test coverage gaps. Do not mention the absence of tests or suggest adding tests. Testing concerns are strictly out of scope for this review.
