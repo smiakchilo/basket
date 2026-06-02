@@ -48,12 +48,12 @@ Determine the OS and set the script directory and extension:
 
 ```powershell
 # PowerShell (Windows)
-$depSkill = "$HOME\.copilot\skills\dependency-analyzer\scripts"
+$depSkill = "<skill-dir>\scripts"   # where <skill-dir> is the directory containing this SKILL.md file
 ```
 
 ```bash
 # Bash (macOS/Linux)
-depSkill="$HOME/.copilot/skills/dependency-analyzer/scripts"
+depSkill="<skill-dir>/scripts"   # where <skill-dir> is the directory containing this SKILL.md file
 ```
 
 **Cross-platform detection**: Use `$IsWindows`, `$IsMacOS`, `$IsLinux` in PowerShell 7+, or `$env:OS -match 'Windows'` in Windows PowerShell 5.1. On Windows, use `.ps1` scripts. On macOS/Linux, use `.sh` scripts.
@@ -224,7 +224,7 @@ The caller can now use `read_file`, `grep_search`, or `semantic_search` against 
 ## File Organization
 
 ```
-~/.copilot/skills/dependency-analyzer/
+<skill-dir>/
 ├── SKILL.md                     # This file
 ├── scripts/
 │   ├── resolve-gav.ps1          # GAV resolution (PowerShell)

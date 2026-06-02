@@ -123,7 +123,7 @@ For the full directory paths to search per harness, see **[references/harness-ma
 
 **General principle**: always start from the **nearest available location** and escalate outward only when no suitable file exists at the closer scope.
 
-- **Copilot / Claude**: begin at project level (`.github/instructions/` or `.claude/rules/`). Move to the intermediate user-local level (e.g. `%APPDATA%\Code\User\prompts\` for Copilot), then user-global, only when the rule is truly language- or framework-generic and not project-specific.
+- **Copilot / Claude**: begin at project level (`.github/instructions/` or `.claude/rules/`). Move to the intermediate user-local level (e.g. `{{VSCODE_USER_PROMPTS_FOLDER}}` for Copilot), then user-global, only when the rule is truly language- or framework-generic and not project-specific.
 - **Codex**: begin at the **nearest AGENTS.md** to the modified file (see _Nearest AGENTS.md Resolution_ in [references/harness-map.md](references/harness-map.md)). Fall back to the root `AGENTS.md` only when no closer file covers the relevant scope.
 
 Additional rules:

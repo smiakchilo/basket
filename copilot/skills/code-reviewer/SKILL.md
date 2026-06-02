@@ -136,7 +136,7 @@ Search for and read every file matching these patterns in the workspace:
 #### 3.2 User-level / global instructions (if accessible)
 
 Attempt to read from these paths (they may not exist — that is fine, skip silently):
-- `%APPDATA%/Local/github-copilot/intellij/` — IntelliJ Copilot settings
+- The IntelliJ Copilot settings directory (platform- and installation-specific; skip silently if not accessible)
 - The user-level prompts folder for VS Code or GitHub Copilot CLI
 
 Do NOT fail or warn if these are inaccessible. Just proceed with what you have.
@@ -373,13 +373,13 @@ Does the change as a whole make architectural sense? Does it introduce unnecessa
 
 ### Expert Prompt Template
 
-Fill in the placeholders and pass this as the `prompt` to `runSubagent`. Set `model` to the **expert** model from [model-config.md](#configuration).
+Fill in the placeholders and pass this as the `prompt` to `runSubagent`. Set `model` to the **expert** model from [model-config.md](#configuration). Before sending, replace `{{SKILL_DIR}}` with the resolved absolute path of the directory containing this SKILL.md file.
 
 ```
 You are a senior staff engineer performing a rigorous code review.
 
 Read the analysis guide first:
-  read_file: $HOME/.copilot/skills/code-reviewer/references/expert-analysis.md
+  read_file: {{SKILL_DIR}}/references/expert-analysis.md
 
 Review mode: {{MODE}}
 
@@ -442,7 +442,7 @@ runSubagent(
 
 **Skip this phase only when the user triggered Mode E (fast/light review). Execute by default for all other reviews.**
 
-After Phase 4 returns its structured findings, launch a second expert subagent with the **expert** model. Its sole mandate is to find what Phase 4 missed. <!-- refined: "Phase 2 missed" corrected to "Phase 4 missed" --> Fill in the placeholders and pass this as the `prompt` to `runSubagent`:
+After Phase 4 returns its structured findings, launch a second expert subagent with the **expert** model. Its sole mandate is to find what Phase 4 missed. <!-- refined: "Phase 2 missed" corrected to "Phase 4 missed" --> Fill in the placeholders and pass this as the `prompt` to `runSubagent`. Before sending, replace `{{SKILL_DIR}}` with the resolved absolute path of the directory containing this SKILL.md file:
 
 ```
 You are a senior staff engineer performing a second-opinion code review.
@@ -450,7 +450,7 @@ A first analysis has already been completed. Its findings are in "## Existing Fi
 Your job is to find what was missed.
 
 Read the analysis guide first:
-  read_file: $HOME/.copilot/skills/code-reviewer/references/expert-analysis.md
+  read_file: {{SKILL_DIR}}/references/expert-analysis.md
 
 Phase 3 output:
 {{PASTE FULL PHASE 3 STRUCTURED OUTPUT HERE}}

@@ -24,7 +24,7 @@ Every script lives in `./scripts/` and accepts `-Path` (mandatory) and `-MaxResu
 
 ```powershell
 # Resolve the skill scripts directory
-$logSkill = "$HOME\.copilot\skills\log-analyzer\scripts"
+$logSkill = "<skill-dir>\scripts"   # where <skill-dir> is the directory containing this SKILL.md file
 $logFile  = "path\to\aemerror.log"
 ```
 
@@ -291,13 +291,13 @@ See [Analysis Guidelines](#analysis-guidelines) for what to cover.
 
 ### Scouting Prompt Template
 
-Fill in the placeholders and pass this as the `prompt` to `runSubagent`. Set `model` to the **worker** model from `model-config.md`.
+Fill in the placeholders and pass this as the `prompt` to `runSubagent`. Set `model` to the **worker** model from `model-config.md`. Before sending, replace `{{SKILL_DIR}}` with the resolved absolute path of the directory containing this SKILL.md file.
 
 ```
 You are a log data collector. Read the skill documentation first:
-  read_file: $HOME/.copilot/skills/log-analyzer/SKILL.md
+  read_file: {{SKILL_DIR}}/SKILL.md
 
-Script directory: $HOME/.copilot/skills/log-analyzer/scripts
+Script directory: {{SKILL_DIR}}/scripts
 
 Log file(s):
   {{LOG_FILE_PATHS}}
