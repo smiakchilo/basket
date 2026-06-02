@@ -173,13 +173,13 @@ This skill exists to produce **informative test coverage** — tests that valida
 
 Use the memory tool to read `/memories/skill-memos/java-unit-test-writer.md`. If the file exists, internalize its advice before proceeding. If it does not exist, continue.
 
-**Write-back rule** — whenever an unexpected problem arises during this execution and you resolve it, append a memo entry (`### Title — YYYY-MM-DD` / `**Problem**: …` / `**Fix**: …`) to the same file (create it if absent). If the file exceeds ~30 lines, consolidate old entries. See [skill-learning.instructions.md](../../instructions/skill-learning.instructions.md) for the full protocol.
+**Write-back rule** — whenever an unexpected problem arises during this execution and you resolve it, append a memo entry (`### Title — YYYY-MM-DD` / `**Problem**: …` / `**Fix**: …`) to the same file (create it if absent). If the file exceeds ~30 lines, consolidate old entries. See [Skill Learning — Persistent Memos](../../instructions/skill-learning.instructions.md) for the full protocol.
 
-**Resilience protocol** — read and follow [resilience-protocol.instructions.md](../../instructions/resilience-protocol.instructions.md). Check `/memories/session/skill-progress.md` for a prior checkpoint matching this task. If one exists, offer to resume. Checkpoint your progress after every major step. Emit a brief status message to the user after every step.
+**Resilience protocol** — read and follow [Resilience Protocol](../../instructions/resilience-protocol.instructions.md). Check `/memories/session/skill-progress.md` for a prior checkpoint matching this task. If one exists, offer to resume. Checkpoint your progress after every major step. Emit a brief status message to the user after every step.
 
 ## Step 1 — Read the Rules
 
-Load and internalize all rules from [global-copilot-instructions.md](../../instructions/global-copilot-instructions.md), [java-testing.instructions.md](../../instructions/java-testing.instructions.md), and [java-code.instructions.md](../../instructions/java-code.instructions.md) before writing a single line of test code. Every decision in the following steps must comply with those rules.
+Load and internalize all rules from [java-testing.instructions.md](../../instructions/java-testing.instructions.md), and [java-code.instructions.md](../../instructions/java-code.instructions.md) before writing a single line of test code. Every decision in the following steps must comply with those rules.
 
 ## Step 2 — Confirm JDK Session State
 

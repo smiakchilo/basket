@@ -28,12 +28,12 @@ Fetches PR comments (review comments and conversation comments) from the GitHub 
 
 Use the memory tool to read `/memories/skill-memos/comment-processor.md`. If the file exists, internalize its advice before proceeding. If it does not exist, continue.
 
-**Write-back rule** — whenever an unexpected problem arises during this execution and you resolve it, append a memo entry (`### Title — YYYY-MM-DD` / `**Problem**: …` / `**Fix**: …`) to the same file (create it if absent). If the file exceeds ~30 lines, consolidate old entries. See [skill-learning.instructions.md](../../instructions/skill-learning.instructions.md) for the full protocol.
+**Write-back rule** — whenever an unexpected problem arises during this execution and you resolve it, append a memo entry (`### Title — YYYY-MM-DD` / `**Problem**: …` / `**Fix**: …`) to the same file (create it if absent). If the file exceeds ~30 lines, consolidate old entries. See [Skill Learning — Persistent Memos](../../instructions/skill-learning.instructions.md) for the full protocol.
 
 
 ### 0.2 Resilience Protocol
 
-Read and follow [resilience-protocol.instructions.md](../../instructions/resilience-protocol.instructions.md). Check `/memories/session/comment-processor-progress.md` for a prior checkpoint matching this task. If one exists, offer to resume. Checkpoint your progress after completing each numbered step (Step 0, Step 1, Step 2, etc.). Emit a brief status message to the user after every step.
+Read and follow [Resilience Protocol](../../instructions/resilience-protocol.instructions.md). Check `/memories/session/comment-processor-progress.md` for a prior checkpoint matching this task. If one exists, offer to resume. Checkpoint your progress after completing each numbered step (Step 0, Step 1, Step 2, etc.). Emit a brief status message to the user after every step.
 
 ### 0.3 Model Configuration
 
