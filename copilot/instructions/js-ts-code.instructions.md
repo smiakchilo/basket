@@ -1,29 +1,9 @@
 ---
-description: "Use when writing or modifying JavaScript, TypeScript, or ES module source code. Covers comment style conventions."
+description: "Use when writing or modifying JavaScript, TypeScript, or ES module source code. Covers quality and safety standards."
 applyTo: "**/*.js, **/*.mjs, **/*.cjs, **/*.ts, **/*.tsx"
 ---
 
 # JavaScript / TypeScript Code Standards
-
-## Comments
-
-- Use `//` comments inside function bodies.
-- Use `/* */` block comments outside function bodies (e.g., above variables or between declarations).
-- To insert a logical section break between top-level declarations, use the following pattern, where the number of dashes equals the number of characters in the section name:
-
-```js
-/* ------------
-   Section name
-   ------------ */
-```
-
-Do **not** use the `// ----` banner style for section separators:
-
-```js
-// ---------------------------------------------------------------------------
-// Section name   ← DO NOT use this style
-// ---------------------------------------------------------------------------
-```
 
 ## Quality Standards
 

@@ -3,7 +3,7 @@ description: "Use when writing or generating Javadoc or comments for Java classe
 applyTo: "**/*.java, **/*.js, **/*.mjs, **/*.cjs, **/*.ts, **/*.tsx"
 ---
 
-# Javadoc Style Guide
+# Javadoc/JSdoc and Comments Style Guide
 
 ## Common Principles
 
@@ -42,6 +42,11 @@ Structure: **opening sentence → optional body `<p>` paragraphs → tag section
  */
 public static Injectable toType(Object value, Type type) {
 ```
+---
+
+## '{@code}`
+
+- **Never use backticks or quotes to refer to a method name, variable name, parameter name, or any other code symbol in Javadoc prose.** Always use `{@code symbolName}`. Backtick-quoting is a Markdown convention and has no meaning in Javadoc; quotes imply a string literal, not a code symbol.
 
 ---
 
@@ -251,14 +256,23 @@ Open with "Called by {@code ClassName#method} to…" when a single caller exists
   log.warn("skipping resource: path not found");
   ```
 
-- Inline comments inside method bodies **must always** use `//`. **Never** use `/* ... */` inside a method body.
-- Use `/* */` block comments outside method bodies only (e.g., above fields or between members).
-- To insert a logical section break between members of a class, use the following pattern, where the number of dashes equals the number of characters in the section name:
+- Inline comments inside method bodies or function bodies **must always** use `//`. **Never** use `/* ... */` inside a method or function body.
+- Use `/* */` block comments outside method/function bodies only (e.g., above fields, between members, or above variables). Do **not** use `/* */` where `/** */` JSDoc is appropriate — the extra `*` signals a documentable symbol.
+- In JavaScript and TypeScript, use `/** */` JSDoc comments above functions, classes, and module-level constants that benefit from documented parameters or return values.
+- To insert a logical section break between members of a class or between top-level declarations, use the following pattern, where the number of dashes equals the number of characters in the section name:
 
 ```java
 /* ------------
    Section name
    ------------ */
+```
+
+Do **not** use the `// ----` banner style for section separators:
+
+```js
+// ---------------------------------------------------------------------------
+// Section name   ← DO NOT use this style
+// ---------------------------------------------------------------------------
 ```
 
 Examples:
