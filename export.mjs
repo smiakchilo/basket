@@ -16,9 +16,12 @@ import yaml from 'js-yaml';
 const ROOT = dirname(fileURLToPath(import.meta.url));
 const INSTRUCTIONS_DIR = join(ROOT, 'copilot', 'instructions');
 const SKILLS_DIR = join(ROOT, 'copilot', 'skills');
-const CLAUDE_DIR = join(ROOT, 'claude');
-const CLAUDE_RULES_DIR = join(CLAUDE_DIR, 'rules');
-const CODEX_DIR = join(ROOT, 'codex');
+const CLAUDE_DIR        = join(ROOT, 'claude');
+const CLAUDE_RULES_DIR  = join(CLAUDE_DIR, 'rules');
+const CLAUDE_SKILLS_DIR = join(CLAUDE_DIR, 'skills');
+const CODEX_DIR             = join(ROOT, 'codex');
+const CODEX_SKILLS_DIR      = join(CODEX_DIR, 'skills');
+const CODEX_SKILLS_REFS_DIR = join(CODEX_SKILLS_DIR, 'references');
 
 /* -------
    Helpers
@@ -92,6 +95,19 @@ function isAlwaysOn(frontmatter) {
 }
 
 /**
+ * Checks whether an instruction targets skill workflow files — i.e. its {@code applyTo}
+ * globs match the representative path {@code skills/foo/SKILL.md}. Such instructions are
+ * routed to {@code codex/skills/references/} instead of being inlined in {@code AGENTS.md}.
+ * @param frontmatter Parsed frontmatter object from a Copilot instruction file
+ * @return True or false
+ */
+function isSkillTargeted(frontmatter) {
+  if (isAlwaysOn(frontmatter)) return false;
+  const globs = normalizeGlobs(frontmatter.applyTo);
+  return globs.length > 0 && matchesAnyGlob('skills/foo/SKILL.md', globs);
+}
+
+/**
  * Converts a glob pattern to a RegExp. Handles {@code **}, {@code *}, and {@code ?}.
  * Only the subset of glob syntax present in the instruction applyTo fields is supported.
  * @param glob A glob string following shell-style glob conventions (e.g. {@code **&#47;*.java})
@@ -154,11 +170,163 @@ function getSkillNames() {
     .sort();
 }
 
+/* ---------------
+   Skills export
+   --------------- */
+
+/**
+ * Rewrites all references to {@code copilot/instructions/} files in a skill Markdown body
+ * so they point at their Claude equivalents:
+ * {@code global-copilot-instructions.md → CLAUDE.md} (depth-relative) and
+ * {@code X.instructions.md → rules/X.md} (depth-relative).
+ * Both Markdown link targets and plain-text path hints (e.g. in subagent prompt templates)
+ * are rewritten. Non-instruction links are untouched.
+ * @param content Raw Markdown file content
+ * @return Rewritten content string
+ */
+function rewriteLinksForClaude(content, _depth) {
+  // Markdown links: [text](PREFIX/instructions/global-copilot-instructions.md) → [text](PREFIX/CLAUDE.md)
+  content = content.replace(
+    /(\[[^\]]*\])\(([^)]*\/)instructions\/global-copilot-instructions\.md\)/g,
+    '$1($2CLAUDE.md)',
+  );
+  // Markdown links: [text](PREFIX/instructions/X.instructions.md) → [text](PREFIX/rules/X.md)
+  content = content.replace(
+    /(\[[^\]]*\])\(([^)]*\/)instructions\/([\w-]+)\.instructions\.md\)/g,
+    '$1($2rules/$3.md)',
+  );
+  // Plain text: instructions/global-copilot-instructions.md → CLAUDE.md
+  content = content.replace(/\binstructions\/global-copilot-instructions\.md/g, 'CLAUDE.md');
+  // Plain text: instructions/X.instructions.md → rules/X.md
+  content = content.replace(/\binstructions\/([\w-]+)\.instructions\.md/g, 'rules/$1.md');
+  return content;
+}
+
+/**
+ * Creates a Codex link-rewrite function that routes instruction references to their correct
+ * destinations. Instructions whose {@code applyTo} targets the SKILL.md glob pattern are
+ * written as standalone files under {@code codex/skills/references/} and linked accordingly
+ * (depth-relative). All other instruction references are inlined in {@code AGENTS.md} and
+ * their Markdown links are stripped to display text; plain-text paths are replaced with
+ * {@code "AGENTS.md"}. Non-instruction links are untouched.
+ * @param skillTargetedNames Set of instruction names whose applyTo targets SKILL.md files
+ * @return A rewrite function {@code (content: string, depth: number) =&gt; string}
+ */
+function makeCodexRewriteFn(skillTargetedNames) {
+  return function rewriteLinksForCodex(content, depth = 1) {
+    const upToSkillsDir = '../'.repeat(depth);
+    // Markdown links: X.instructions.md → depth-relative references/ or display text
+    content = content.replace(
+      /\[([^\]]*)\]\([^)]*\/instructions\/([\w-]+)\.instructions\.md\)/g,
+      (match, text, name) =>
+        skillTargetedNames.has(name)
+          ? `[${text}](${upToSkillsDir}references/${name}.md)`
+          : text,
+    );
+    // Markdown links: global instruction → display text only
+    content = content.replace(
+      /\[([^\]]*)\]\([^)]*\/instructions\/global-copilot-instructions\.md\)/g,
+      '$1',
+    );
+    // Plain text: X.instructions.md → depth-relative references/ or AGENTS.md
+    content = content.replace(
+      /\binstructions\/([\w-]+)\.instructions\.md/g,
+      (match, name) =>
+        skillTargetedNames.has(name)
+          ? `${upToSkillsDir}references/${name}.md`
+          : 'AGENTS.md',
+    );
+    // Plain text: global instruction path → AGENTS.md
+    content = content.replace(/\binstructions\/global-copilot-instructions\.md/g, 'AGENTS.md');
+    return content;
+  };
+}
+
+/**
+ * Recursively copies all {@code .md} files from {@code srcDir} into {@code destDir},
+ * applying {@code rewriteFn} to each file's content before writing. Subdirectories are
+ * traversed recursively. Non-{@code .md} files are silently skipped.
+ * @param srcDir Absolute path to the source directory
+ * @param destDir Absolute path to the destination directory
+ * @param rewriteFn Function {@code (content: string) => string} applied to each file
+ * @param logPrefix Relative prefix shown in console output (e.g. {@code "claude/skills/foo"})
+ */
+function copySkillMd(srcDir, destDir, rewriteFn, logPrefix, depth = 1) {
+  ensureDir(destDir);
+  for (const entry of readdirSync(srcDir, { withFileTypes: true })) {
+    const srcPath  = join(srcDir,  entry.name);
+    const destPath = join(destDir, entry.name);
+    const entryLog = `${logPrefix}/${entry.name}`;
+    if (entry.isDirectory()) {
+      copySkillMd(srcPath, destPath, rewriteFn, entryLog, depth + 1);
+    } else if (entry.isFile() && entry.name.endsWith('.md')) {
+      writeFileSync(destPath, rewriteFn(readFileSync(srcPath, 'utf8'), depth), 'utf8');
+      console.log(`  ${entryLog}`);
+    }
+  }
+}
+
+/**
+ * Exports all skills to {@code claude/skills/}, rewriting instruction file references
+ * to their Claude-equivalent paths (see {@link rewriteLinksForClaude}).
+ * @param skillNames Sorted array of skill directory names from {@code copilot/skills/}
+ */
+function exportClaudeSkills(skillNames) {
+  ensureDir(CLAUDE_SKILLS_DIR);
+  for (const name of skillNames) {
+    copySkillMd(
+      join(SKILLS_DIR, name),
+      join(CLAUDE_SKILLS_DIR, name),
+      rewriteLinksForClaude,
+      `claude/skills/${name}`,
+    );
+  }
+}
+
+/**
+ * Exports all skills to {@code codex/skills/}, rewriting instruction file references
+ * for Codex. SKILL.md-targeted instructions are routed to {@code codex/skills/references/}
+ * and linked with a depth-relative path; all other instruction references are resolved to
+ * {@code AGENTS.md}.
+ * @param skillNames Sorted array of skill directory names from {@code copilot/skills/}
+ * @param instructions Parsed instruction objects from {@link readInstructions}
+ */
+function exportCodexSkills(skillNames, instructions) {
+  const skillTargetedNames = new Set(
+    instructions.filter(i => isSkillTargeted(i.frontmatter)).map(i => i.name),
+  );
+  ensureDir(CODEX_SKILLS_DIR);
+  for (const name of skillNames) {
+    copySkillMd(
+      join(SKILLS_DIR, name),
+      join(CODEX_SKILLS_DIR, name),
+      makeCodexRewriteFn(skillTargetedNames),
+      `codex/skills/${name}`,
+    );
+  }
+}
+
+/**
+ * Writes SKILL.md-targeted instructions as standalone reference files under
+ * {@code codex/skills/references/}. These instructions are excluded from the profile
+ * {@code AGENTS.md} files and are linked by skill files via depth-relative paths.
+ * @param instructions Parsed instruction objects from {@link readInstructions}
+ */
+function exportCodexSkillReferenceInstructions(instructions) {
+  ensureDir(CODEX_SKILLS_REFS_DIR);
+  for (const { name, body } of instructions.filter(
+    i => i.name !== 'global-copilot-instructions' && isSkillTargeted(i.frontmatter),
+  )) {
+    writeFileSync(join(CODEX_SKILLS_REFS_DIR, `${name}.md`), body.trimEnd() + '\n', 'utf8');
+    console.log(`  codex/skills/references/${name}.md`);
+  }
+}
+
 /* -------------
    Claude export
    ------------- */
 
-function exportClaude(instructions) {
+function exportClaude(instructions, skillNames) {
   ensureDir(CLAUDE_RULES_DIR);
 
   const alwaysOnNames = [];
@@ -185,7 +353,6 @@ function exportClaude(instructions) {
 
   // CLAUDE.md — always-on entry point
   const global = instructions.find(i => i.name === 'global-copilot-instructions');
-  const skills = getSkillNames();
 
   const claudeLines = [
     '<!-- Auto-generated by export.mjs — do not edit manually -->',
@@ -195,8 +362,8 @@ function exportClaude(instructions) {
     '',
     '## Available Skills',
     '',
-    skills.length
-      ? skills.map(s => `- \`${s}\``).join('\n')
+    skillNames.length
+      ? skillNames.map(s => `- [${s}](skills/${s}/SKILL.md)`).join('\n')
       : '_No skills found._',
     '',
     '## Always-On Rules',
@@ -263,15 +430,17 @@ const CODEX_PROFILES = [
   },
 ];
 
-function exportCodex(instructions) {
+function exportCodex(instructions, skillNames) {
   ensureDir(CODEX_DIR);
 
   for (const profile of CODEX_PROFILES) {
     const fileName = profile.name ? `${profile.name}--AGENTS.md` : 'AGENTS.md';
 
     // Collect always-on instructions first, then scoped instructions whose
-    // applyTo globs match at least one of the profile's representative paths
+    // applyTo globs match at least one of the profile's representative paths.
+    // SKILL.md-targeted instructions are excluded — they go to codex/skills/references/.
     const included = instructions.filter(i => {
+      if (isSkillTargeted(i.frontmatter)) return false;
       if (isAlwaysOn(i.frontmatter)) return true;
       const globs = normalizeGlobs(i.frontmatter.applyTo);
       return profile.samplePaths.some(p => matchesAnyGlob(p, globs));
@@ -290,6 +459,17 @@ function exportCodex(instructions) {
       parts.push(body.trimEnd(), '', '---', '');
     }
 
+    if (profile.name === '') {
+      parts.push(
+        '## Available Skills',
+        '',
+        ...(skillNames.length
+          ? skillNames.map(s => `- [${s}](skills/${s}/SKILL.md)`)
+          : ['_No skills found._']),
+        '',
+      );
+    }
+
     writeFileSync(join(CODEX_DIR, fileName), parts.join('\n'), 'utf8');
     console.log(`  codex/${fileName}`);
   }
@@ -304,7 +484,18 @@ console.log('Exporting copilot/ → claude/ and codex/...\n');
 const instructions = readInstructions();
 console.log(`Found ${instructions.length} instruction files.\n`);
 
-exportClaude(instructions);
+const skillNames = getSkillNames();
+console.log(`Found ${skillNames.length} skills.\n`);
+
+exportClaude(instructions, skillNames);
 console.log();
-exportCodex(instructions);
+exportCodex(instructions, skillNames);
+console.log();
+exportCodexSkillReferenceInstructions(instructions);
+console.log();
+
+console.log('Exporting skills...\n');
+exportClaudeSkills(skillNames);
+console.log();
+exportCodexSkills(skillNames, instructions);
 console.log('\nDone.');

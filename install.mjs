@@ -118,6 +118,11 @@ if (existsSync(claudeHome)) {
     join(claudeHome, 'skills'),
     '~/.claude/skills ← copilot/skills/',
   );
+  copyDir(
+    join(BASKET, 'claude', 'skills'),
+    join(claudeHome, 'skills'),
+    '~/.claude/skills ← claude/skills/ (rewritten .md overlay)',
+  );
   // Copy loose files directly under copilot/ (non-directories)
   for (const entry of readdirSync(join(BASKET, 'copilot'))) {
     const src = join(BASKET, 'copilot', entry);
@@ -172,6 +177,11 @@ if (!existsSync(codexProjectsFile)) {
       join(BASKET, 'copilot', 'skills'),
       join(dotCodex, 'skills'),
       '.codex/skills ← copilot/skills/',
+    );
+    copyDir(
+      join(BASKET, 'codex', 'skills'),
+      join(dotCodex, 'skills'),
+      '.codex/skills ← codex/skills/ (rewritten .md overlay)',
     );
 
     // Seed *--AGENTS.md → project subdirectories
