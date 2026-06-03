@@ -121,38 +121,7 @@ Run the script via terminal from the repository root. Capture its stdout to conf
 
 **Step 4 — Read the output file.** The script prints the output file path. Read that file and use its content as the git data for this review.
 
-**Step 5 — Load instruction files (all modes).** Find all files per subsections 3.1–3.2, compute their SHA-256 hashes, and apply the cache logic from subsection 3.3 — place cache-hit summaries in `## Instruction Summaries` and cache-miss full content in `## Instruction Files (Full)`. Then proceed to Phase 4.
-
-The following subsections (3.1–3.3) govern instruction-file loading, performed directly by the orchestrator.
-
-#### 3.1 Project-level instructions
-
-Search for and read every file matching these patterns in the workspace:
-- `.github/copilot-instructions.md`
-- `.github/instructions/**`
-- `CLAUDE.md` in the workspace root
-- `.claude/rules/**`
-- `AGENTS.md` in the workspace root and in any subdirectory (e.g. `core/AGENTS.md`, `core/src/test/AGENTS.md`, etc.)
-
-#### 3.2 User-level / global instructions (if accessible)
-
-Attempt to read from these paths (they may not exist — that is fine, skip silently):
-- The IntelliJ Copilot settings directory (platform- and installation-specific; skip silently if not accessible)
-- The user-level prompts folder for VS Code or GitHub Copilot CLI
-
-Do NOT fail or warn if these are inaccessible. Just proceed with what you have.
-
-#### 3.3 Cache check
-
-For each instruction file located in subsections 3.1–3.2, check whether a cached summary exists and is up to date:
-
-1. Read `/memories/repo/instruction-cache.md`. If the file does not exist, treat all instruction files as cache misses.
-2. Compute the SHA-256 hash of each instruction file:
-   - PowerShell: `Get-FileHash -Path "<path>" -Algorithm SHA256 | Select-Object -ExpandProperty Hash`
-   - Unix: `sha256sum "<path>" | cut -d' ' -f1`
-3. Compare the hash against the `**Hash**:` entry in the cache for that path:
-   - **Cache hit** (hash matches): place the file's cached `**Summary**:` bullet list in the `## Instruction Summaries` output section.
-   - **Cache miss** (hash differs, or file not in cache): place the full file content **and** the computed hash in the `## Instruction Files (Full)` output section.
+**Step 5 — Load instruction files (all modes).** Read and follow the [Instruction Cache](../instruction-cache/SKILL.md) **Load Protocol**, executing every step directly. Place cache-hit summaries in `## Instruction Summaries` and cache-miss full content in `## Instruction Files (Full)`. Then proceed to Phase 4.
 
 ### Mode B Worker Prompt Template
 
@@ -569,21 +538,7 @@ Within each file section, list findings in order of line numbers in the changed 
 
 ### 6.4 — Update Instruction Cache
 
-If the Phase 4 expert returned a non-empty `## New Instruction Summaries` section, update `/memories/repo/instruction-cache.md`:
-
-1. Read the existing cache (create the file if it does not exist).
-2. For each entry in `## New Instruction Summaries`:
-   - Parse the `### <file-path> | SHA256: <hash>` header to extract the path and hash.
-   - Find the matching `## <file-path>` block in the cache and replace it entirely; or append a new block if the path is not yet cached.
-   - Block format:
-     ```
-     ## <absolute-file-path>
-     **Hash**: <sha256>
-     **Summary**:
-     - <rule 1>
-     - <rule 2>
-     ```
-3. Write the updated content back to `/memories/repo/instruction-cache.md`.
+If the Phase 4 expert returned a non-empty `## New Instruction Summaries` section, read and follow the [Instruction Cache](../instruction-cache/SKILL.md) **Update Protocol**.
 
 ### 6.5 — Output the Report
 
