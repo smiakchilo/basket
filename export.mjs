@@ -370,7 +370,7 @@ function exportClaude(instructions, skillNames) {
     '',
     'The following rules apply to all files (no path restriction):',
     '',
-    alwaysOnNames.map(n => `- ${n}`).join('\n'),
+    alwaysOnNames.map(n => `- [${n}](rules/${n}.md)`).join('\n'),
     '',
   ];
 

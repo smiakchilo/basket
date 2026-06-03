@@ -1,6 +1,11 @@
+---
+description: Best practices for invoking Maven/Gradle builds in Windows Terminal to avoid quoting issues, output flooding, and timeouts.
+applyTo: **
+---
+
 # Windows Terminal Compatibility
 
-VS Code on Windows uses PowerShell by default. PowerShell parses arguments with `-D` flags (Maven, Gradle, Java CLI) differently from `cmd.exe`, causing quoting failures, garbled properties, and silent misconfigurations. The rules below prevent those issues and apply to **every** terminal command that invokes Maven, Gradle, or any JVM-based tool with `-D` system properties.
+Agents on Windows use PowerShell by default. PowerShell parses arguments with `-D` flags (Maven, Gradle, Java CLI) differently from `cmd.exe`, causing quoting failures, garbled properties, and silent misconfigurations. The rules below prevent those issues and apply to **every** terminal command that invokes Maven, Gradle, or any JVM-based tool with `-D` system properties.
 
 ## Command Construction
 
