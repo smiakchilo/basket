@@ -221,7 +221,7 @@ runSubagent(
 **Read these files first, in order:**
 1. Environment Fact Sheet at: <absolute path to /memories/session/env-facts.md>
    — This contains the project's Java version, AEM version, and available test dependencies. Internalize before reading anything else.
-2. CLASS-ANALYSIS.md at: <absolute path to skills/java-unit-test-writer/CLASS-ANALYSIS.md>
+2. class-analysis.md at: <absolute path to skills/java-unit-test-writer/class-analysis.md>
    — This contains your full analysis protocol. Follow it phase by phase.
 3. global-copilot-instructions.md at: <absolute path to instructions/global-copilot-instructions.md>
 4. java-testing.instructions.md at: <absolute path to instructions/java-testing.instructions.md>
@@ -234,7 +234,7 @@ runSubagent(
 - RELATED_CLASS_PATHS: <comma-separated paths, or 'none'>
 - PROJECT_MODULE: <module name>
 
-**Execute all phases in CLASS-ANALYSIS.md.** Return the complete output as specified in Phase 8.",
+**Execute all phases in class-analysis.md.** Return the complete output as specified in Phase 8.",
   description: "Expert analysis of <ClassName>"
 )
 ```
@@ -526,6 +526,23 @@ After coverage targets are met, review the full test class for repeated boilerpl
 
 Apply this pass as the final structural step — after the deduplication pass is complete, before the compliance review. Follow the **[Method Grouping and Section Dividers](../../instructions/java-testing.instructions.md)** rules in `java-testing.instructions.md`: one section per public method under test; methods ordered happy-path → boundary → error within each section; lifecycle methods in runtime order; cross-cutting concerns in their own sections at the end. Use the mandatory `/* --- / name / --- */` block-comment divider format with dash rows whose length exactly matches the section name character count.
 
+### Static Analysis Pass (JetBrains MCP)
+
+**Condition**: Run this pass after the Method Grouping Pass (or after the Deduplication Pass when the class has ≤10 methods), before the Step 6 Exit Gate.
+
+If the JetBrains MCP server is available, use its **"Find problems in file"** tool to catch code smells the compiler won't reject: unused imports, unused variables, unused method parameters, dangling `throws` clauses, redundant casts, unnecessary `null` checks, and similar warnings.
+
+1. Call **"Find problems in file"** with the absolute path of the test class.
+2. For each problem reported, fix it in the test class.
+3. Repeat until **"Find problems in file"** returns no problems.
+4. After all problems are resolved, run a **compile-only** build to confirm the fixes did not introduce regressions:
+   ```
+   cmd /c "set JAVA_HOME=<JAVA_SDK_PATH>&& mvn test-compile -pl core -B -ntp 2>&1"
+   ```
+   Omit the `set JAVA_HOME=<JAVA_SDK_PATH>&&` prefix if `JAVA_HOME_OVERRIDE_REQUIRED` is `NO`.
+
+> **JetBrains MCP unavailable**: if the tool is not present or returns an error, skip this pass entirely. This is not a blocker.
+
 ### Step 6 Exit Gate — MANDATORY
 
 **Step 6 is NOT complete until Step 7 (Compliance Review) has run and returned a passing report.** Delivering coverage numbers to the user does NOT constitute task completion. Do NOT proceed to Step 8, do NOT summarize results, and do NOT emit any "done" or "success" message before Step 7 finishes. Checkpoint to `/memories/session/skill-progress.md` now:
@@ -561,7 +578,7 @@ runSubagent(
 **Read these files first, in order:**
 1. Environment Fact Sheet at: <absolute path to /memories/session/env-facts.md>
    — This contains the project's Java version, AEM version, and available test dependencies. Internalize before reading anything else.
-2. COMPLIANCE-REVIEW.md at: <absolute path to skills/java-unit-test-writer/COMPLIANCE-REVIEW.md>
+2. compliance-review.md at: <absolute path to skills/java-unit-test-writer/compliance-review.md>
    — This contains your full review protocol. Follow it phase by phase.
 3. java-testing.instructions.md at: <absolute path to instructions/java-testing.instructions.md>
 4. java-code.instructions.md at: <absolute path to instructions/java-code.instructions.md>
@@ -580,7 +597,7 @@ runSubagent(
 - LOGIC_ERROR_DECISIONS: <list or 'none'>
 - TEST_SCENARIO_CATALOG_PATH: <absolute path to /memories/session/test-scenario-catalog.md, or 'none'>
 
-**Execute all phases in COMPLIANCE-REVIEW.md.** Auto-fix every violation found. Re-run Maven to confirm BUILD SUCCESS after fixes. Return the Final Report as specified in Phase 7 of COMPLIANCE-REVIEW.md.",
+**Execute all phases in compliance-review.md.** Auto-fix every violation found. Re-run Maven to confirm BUILD SUCCESS after fixes. Return the Final Report as specified in Phase 7 of compliance-review.md.",
   description: "Compliance review of <TestClassName>"
 )
 ```
