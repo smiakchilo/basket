@@ -11,7 +11,9 @@
 import {
   existsSync,
   readFileSync,
-  cpSync,
+  statSync,
+  readdirSync,
+  copyFileSync,
   mkdirSync,
 } from 'fs';
 import { join, resolve, dirname } from 'path';
@@ -36,7 +38,34 @@ function ensureDir(dir) {
 }
 
 /**
- * Copies a directory tree into dest, overwriting matching files.
+ * Recursively copies src into dest.
+ * Skips a destination file (not folder) that already exists and has a newer
+ * modification time than the source — logs a warning in that case.
+ */
+function copyRecursive(src, dest) {
+  for (const entry of readdirSync(src, { withFileTypes: true })) {
+    const srcPath = join(src, entry.name);
+    const destPath = join(dest, entry.name);
+    if (entry.isDirectory()) {
+      ensureDir(destPath);
+      copyRecursive(srcPath, destPath);
+    } else {
+      if (existsSync(destPath) && statSync(destPath).isFile()) {
+        const destMtime = statSync(destPath).mtimeMs;
+        const srcMtime = statSync(srcPath).mtimeMs;
+        if (destMtime > srcMtime) {
+          console.warn(`  warn: skipped (destination is newer): ${destPath}`);
+          continue;
+        }
+      }
+      copyFileSync(srcPath, destPath);
+    }
+  }
+}
+
+/**
+ * Copies a directory tree into dest, overwriting matching files unless the
+ * destination file is newer than the source.
  * Silently skips if src does not exist.
  */
 function copyDir(src, dest, label) {
@@ -45,7 +74,7 @@ function copyDir(src, dest, label) {
     return;
   }
   ensureDir(dest);
-  cpSync(src, dest, { recursive: true, force: true });
+  copyRecursive(src, dest);
   console.log(`  copied: ${label}`);
 }
 
