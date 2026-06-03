@@ -20,17 +20,9 @@ Search for and read every file matching these patterns in the workspace:
 - `.claude/rules/**`
 - `AGENTS.md` in the workspace root and in any subdirectory (e.g. `core/AGENTS.md`, `core/src/test/AGENTS.md`, etc.)
 
-### Step 2 — Find user-level / global instructions (if accessible)
+### Step 2 — Cache check
 
-Attempt to read from these paths (they may not exist — that is fine, skip silently):
-- The IntelliJ Copilot settings directory (platform- and installation-specific; skip silently if not accessible)
-- The user-level prompts folder for VS Code or GitHub Copilot CLI
-
-Do NOT fail or warn if these are inaccessible. Just proceed with what you have.
-
-### Step 3 — Cache check
-
-For each instruction file located in Steps 1–2, check whether a cached summary exists and is up to date:
+For each instruction file located in Step 1, check whether a cached summary exists and is up to date:
 
 1. Read `/memories/repo/instruction-cache.md`. If the file does not exist, treat all instruction files as cache misses.
 2. Compute the SHA-256 hash of each instruction file:

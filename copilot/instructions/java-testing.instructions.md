@@ -58,12 +58,12 @@ applyTo: "**/src/test/**/*.java"
   Bad — field used only in `setUp()`:
   ```java
   @Mock
-  private ResourceResolverFactory resolverFactory; // ✗ only used in setUp()
+  private ServiceFactory serviceFactory; // ✗ only used in setUp()
 
   @BeforeEach
   void setUp() {
-      when(resolverFactory.getServiceResourceResolver(any())).thenThrow(new LoginException());
-      context.registerService(ResourceResolverFactory.class, resolverFactory);
+      when(serviceFactory.getService(any())).thenThrow(new LoginException());
+      context.registerService(ServiceFactory.class, serviceFactory);
   }
   ```
 
@@ -71,9 +71,9 @@ applyTo: "**/src/test/**/*.java"
   ```java
   @BeforeEach
   void setUp() {
-      ResourceResolverFactory resolverFactory = Mockito.mock(ResourceResolverFactory.class); // ✓
-      when(resolverFactory.getServiceResourceResolver(any())).thenThrow(new LoginException());
-      context.registerService(ResourceResolverFactory.class, resolverFactory);
+      ServiceFactory serviceFactory = Mockito.mock(ServiceFactory.class); // ✓
+      when(serviceFactory.getService(any())).thenThrow(new LoginException());
+      context.registerService(ServiceFactory.class, serviceFactory);
   }
   ```
 
@@ -210,6 +210,8 @@ applyTo: "**/src/test/**/*.java"
 
 - **Only add `@RunWith(MockitoJUnitRunner.class)` (JUnit 4) or `@ExtendWith(MockitoExtension.class)` (JUnit 5) when the class has `@Mock`, `@Spy`, or `@Captor` field annotations that require the runner to inject them.** When all mocks are created manually with `Mockito.mock()`, omit the runner/extension — even if Mockito is otherwise used. Remove it if it was added unnecessarily.
 
+- **Maven Surefire enables Java assertions (`-ea`) by default.** `assert` statements in production code are live during test execution. Any `assert` guarding a service or resource (e.g. `assert settingsService != null`) will throw `AssertionError` if that dependency is not registered in the test context. Always register every OSGi service that production code guards with `assert`.
+
 ### Naming Convention
 
 `should[ExpectedBehavior]` or `should[ExpectedBehavior]When[StateUnderTest]`.
@@ -329,6 +331,12 @@ If the code under test calls an AEM class method in a non-standard way (e.g. a `
 
 For all remaining mock-vs-real decisions, follow the [Mock Avoidance Hierarchy](#mock-avoidance-hierarchy).
 
+**Project-own `@Component` services are not auto-registered.** Sling Testing Mocks scans OSGi descriptors only from JAR files on the classpath — it does **not** scan classpath directories like `target/classes/OSGI-INF/`. Any service declared with `@Component` in the project under test must be registered explicitly in `setUp()`:
+
+```java
+context.registerService(Injector.class, new MyCustomInjector());
+```
+
 ### Troubleshooting
 
 If you encounter a "Invalid namespace prefix" error with `ResourceResolverType.JCR_OAK`, register the namespace in the set-up method:
@@ -338,6 +346,8 @@ Session session = context.resourceResolver().adaptTo(Session.class);
 assertNotNull(session);
 session.getWorkspace().getNamespaceRegistry().registerNamespace("granite", "http://www.adobe.com/jcr/granite/1.0");
 ```
+
+**`resourceResolver.resolve(null)` returns `/`, not a non-existing resource.** In Sling Testing Mocks, resolving a `null` path returns the root node, which passes any `resourceExists()` check. When production code calls `resourceExists(resolver, path)` and `path` is an `@ValueMapValue` that was not set in the test, the "resource not found" early return is bypassed. Ensure either that all authored path properties are set to a non-existent-but-valid path string in the test fixture, or that the production code null-checks the path before resolving.
 
 ## Fixtures
 
@@ -354,6 +364,19 @@ Resource myResource = new VirtualMapResource(
     "my/resource/type",
     new ValueMapDecorator(Collections.singletonMap("text", "Hello world")));
 MyModel model = myResource.adaptTo(MyModel.class);
+```
+
+**`@Source("injector-name")` is a hard requirement regardless of injection strategy.** When a Sling Model field is annotated with `@Source("some-injector")`, Sling Models throws `IllegalArgumentException` if no injector with that name is registered — even when `DefaultInjectionStrategy.OPTIONAL` is set. OPTIONAL guards against a missing *value*, not a missing *injector*. A missing named injector causes the entire model creation to fail and `adaptTo()` to return `null`. Register every custom injector the model uses explicitly in `setUp()`:
+
+```java
+context.registerService(Injector.class, new RTModelInjector());
+```
+
+**When `adaptTo()` returns `null`, use `ModelFactory.createModel()` to reveal the true cause.** `adaptTo()` swallows the underlying exception silently. `ModelFactory.createModel()` throws it, exposing the full message and cause chain:
+
+```java
+ModelFactory modelFactory = context.getService(ModelFactory.class);
+MyModel model = modelFactory.createModel(context.request(), MyModel.class); // throws with details on failure
 ```
 
 ## Method Grouping and Section Dividers
