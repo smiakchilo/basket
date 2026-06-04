@@ -104,7 +104,7 @@ applyTo: "**/src/test/**/*.java"
   when(service.getConfig()).thenReturn(config);
   ```
 
-- **Exhaust the [Mock Avoidance Hierarchy](#mock-avoidance-hierarchy) before every `Mockito.mock()`.** Consider in order: AemContext/Sling testing libraries → real `…Impl` from the project → inline makeshift implementation → custom `AdapterFactory`. Only after all four are ruled out is `Mockito.mock()` acceptable.
+- **Exhaust the [Mock Avoidance Hierarchy](#mock-avoidance-hierarchy) before every `Mockito.mock()`.** Consider in order: AemContext/Sling testing libraries → real implementation (project or third-party) → existing makeshift from other test classes → new inline makeshift implementation → custom `AdapterFactory`. Only after all five are ruled out is `Mockito.mock()` acceptable.
 
 - **DO NOT** add string messages to assertion calls (e.g. `assertNotNull(x, "message")`). Assertion messages add noise; clear test names and obvious assertion targets are sufficient.
 
@@ -264,11 +264,15 @@ public void shouldParseSettings(String settings) {
 
 Every `Mockito.mock()` call is a liability. Mocks hide integration bugs, drift from real behavior over time, and make tests brittle. **Treat every mock as a last and dire resort.** Before writing `Mockito.mock(...)`, stop and walk through the following hierarchy top-to-bottom. Use the **first** level that can satisfy the dependency:
 
-1. **AemContext / Sling testing libraries** — Use `context.request()`, `context.resourceResolver()`, `MockResourceResolver`, `MockSlingHttpServletRequest`, and other real implementations provided by AemContext and the Sling testing libraries. These are not mocks — they are functional implementations.
+1. **AemContext / Sling testing libraries** — Use `context.request()`, `context.resourceResolver()`, `MockResourceResolver`, `MockSlingHttpServletRequest`, and other real implementations provided by AemContext and the Sling testing libraries. These are not mocks — they are functional implementations. For standard Sling or AEM services, check whether a well-known mock class already exists in the AEM Mocks library (e.g. `MockSlingSettingService`, `MockExternalizer`).
 
-2. **Real `…Impl` class from the project** — Search the codebase for a concrete implementation of the interface. Register it with `context.registerService(Interface.class, new ConcreteImpl())` or `context.registerInjectActivateService(new ConcreteImpl(), props)`. A real class exercised in a test catches real bugs.
+2. **Real implementation — project or third-party** — Search the codebase *and* available third-party libraries for a concrete implementation of the interface. A real class exercised in a test catches real bugs. Do not limit the search to the current module — an implementation in a dependency JAR is equally valid.
 
-3. **Inline makeshift implementation** — If the dependency is an interface with a small surface area (1–3 methods used by the code under test), create an anonymous class or a `private static` inner class right in the test file that implements the interface with minimal real logic. This is still vastly preferable to a mock because it preserves type safety and makes the test's intent explicit.
+   **Prefer `registerInjectActivateService` over `registerService`.** `registerInjectActivateService` triggers `@Activate` and injects `@Reference` fields, exercising the service's real lifecycle. Fall back to `registerService` only when the service's own `@Reference` dependencies create a cascading registration chain — try registering up to 5 prerequisite services first. If more are needed, stop and use `context.registerService(Interface.class, impl)` with a manually constructed instance instead.
+
+3. **Reuse an existing makeshift implementation** — Before creating a new stub, search existing test classes in the project for a `private static` inner class or anonymous implementation of the same interface. If one exists, extract it to a shared test-utility location or reference it directly. Do not duplicate makeshift implementations across test classes.
+
+4. **New makeshift implementation** — If no reusable stub exists and the dependency is an interface with a small surface area (1–3 methods used by the code under test), create an anonymous class or a `private static` inner class right in the test file that implements the interface with minimal real logic. This is still vastly preferable to a mock because it preserves type safety and makes the test's intent explicit. Also use this level when you need the implementation to return specific values that a real implementation would not produce.
 
    ```java
    private static class StubLinkHandler implements LinkHandler {
@@ -279,14 +283,14 @@ Every `Mockito.mock()` call is a liability. Mocks hide integration bugs, drift f
    }
    ```
 
-4. **Custom `AdapterFactory`** — If the code under test calls `.adaptTo(CustomType.class)`, create a lightweight `AdapterFactory` implementation in the test class and register it with `context.registerService(AdapterFactory.class, factory)`. This makes `adaptTo()` work naturally without mocking the adaptation target or the adaptable.
+5. **Custom `AdapterFactory`** — If the code under test calls `.adaptTo(CustomType.class)`, create a lightweight `AdapterFactory` implementation in the test class and register it with `context.registerService(AdapterFactory.class, factory)`. This makes `adaptTo()` work naturally without mocking the adaptation target or the adaptable.
 
    ```java
    context.registerAdapter(Resource.class, CustomModel.class,
        (resource) -> new CustomModel(resource));
    ```
 
-5. **`Mockito.mock()` — absolute last resort** — Only when levels 1–4 are genuinely infeasible: the dependency is a complex third-party class whose constructor is inaccessible, the class has deep internal state that cannot be replicated, or the test specifically needs `Mockito.verify()` to confirm an interaction when there is no observable state change. **Every mock must be justified by the inability to use levels 1–4.**
+6. **`Mockito.mock()` — absolute last resort** — Only when levels 1–5 are genuinely infeasible: the dependency is a complex third-party class whose constructor is inaccessible, the class has deep internal state that cannot be replicated, or the test specifically needs `Mockito.verify()` to confirm an interaction (e.g. spying on a method call) when there is no observable state change and this cannot be achieved at a higher level. **Every mock must be justified by the inability to use levels 1–5.**
 
 This hierarchy is **mandatory**. It is not a suggestion or a preference. When reviewing test code, every `Mockito.mock()` and `@Mock` annotation must be traceable to a genuine inability to use a higher level in the hierarchy.
 
@@ -365,6 +369,8 @@ Resource myResource = new VirtualMapResource(
     new ValueMapDecorator(Collections.singletonMap("text", "Hello world")));
 MyModel model = myResource.adaptTo(MyModel.class);
 ```
+
+**Every `@OSGiService` / `@Reference` field in the model MUST be registered in `AemContext` before adaptation.** A Sling Model test is invalid if any injectable service dependency is left unregistered. Register each one in `setUp()` using the [Mock Avoidance Hierarchy](#mock-avoidance-hierarchy). If `adaptTo()` returns `null`, the most likely cause is a missing service — use `ModelFactory.createModel()` to surface the error. **Do not work around a null model by skipping assertions or weakening the test.** 
 
 **`@Source("injector-name")` is a hard requirement regardless of injection strategy.** When a Sling Model field is annotated with `@Source("some-injector")`, Sling Models throws `IllegalArgumentException` if no injector with that name is registered — even when `DefaultInjectionStrategy.OPTIONAL` is set. OPTIONAL guards against a missing *value*, not a missing *injector*. A missing named injector causes the entire model creation to fail and `adaptTo()` to return `null`. Register every custom injector the model uses explicitly in `setUp()`:
 
