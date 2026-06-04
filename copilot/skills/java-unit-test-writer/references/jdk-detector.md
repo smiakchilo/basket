@@ -12,7 +12,7 @@
    Normalize: `1.8` → 8, `11` → 11, `17` → 17, etc.
    If the version cannot be determined, return: `{ "status": "version-unknown" }`
 
-2. Check `/memories/repo/jdk-paths.md` for a row whose Version column matches the required version.
+2. Check `.github/memories/repo/jdk-paths.md` for a row whose Version column matches the required version.
    If found, verify the directory still exists (`Test-Path`).
    If the directory exists, remember the cached path and skip step 4 — but always run step 3.
    If the directory is gone, note the stale entry and continue.

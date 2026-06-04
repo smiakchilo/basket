@@ -17,8 +17,8 @@ The calling agent provides these values in the subagent prompt:
 
 | Variable | Description |
 |----------|-------------|
-| `ENV_FACTS_PATH` | Absolute path to `/memories/session/env-facts.md` — the project's fundamental environment facts |
-| `ERROR_LEDGER_ENTRIES` | The full content of `/memories/session/error-ledger.md` (or the relevant entries) |
+| `ENV_FACTS_PATH` | Absolute path to `.github/memories/session/env-facts.md` — the project's fundamental environment facts |
+| `ERROR_LEDGER_ENTRIES` | The full content of `.github/memories/session/error-ledger.md` (or the relevant entries) |
 | `TEST_CLASS_PATH` | Absolute path to the current test class (snapshot saved before invocation) |
 | `CLASS_UNDER_TEST_PATH` | Absolute path to the production class being tested |
 | `FAILING_ERROR_MESSAGES` | The specific compiler errors or test failure stack traces |

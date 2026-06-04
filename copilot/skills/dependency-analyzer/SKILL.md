@@ -38,7 +38,7 @@ When invoked directly via `/dependency-analyzer`, the current model executes the
 
 ## Step 0 — Read Skill Memos
 
-Read `/memories/skill-memos/dependency-analyzer.md` and apply any recorded advice. Follow [Skill Learning — Persistent Memos](../../instructions/skill-learning.instructions.md) for the full memo protocol.
+Read `.github/memories/skill-memos/dependency-analyzer.md` and apply any recorded advice. Follow [Skill Learning — Persistent Memos](../../instructions/skill-learning.instructions.md) for the full memo protocol.
 
 ## Step 1 — Resolve Script Paths
 

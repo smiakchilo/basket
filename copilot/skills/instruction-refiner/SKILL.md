@@ -16,9 +16,9 @@ Analyzes the user's manual corrections to AI-generated code and distills them in
 
 ## Step 0 — Read Skill Memos and Resilience Protocol
 
-Read `/memories/skill-memos/instruction-refiner.md` and apply any recorded advice. Follow [Skill Learning — Persistent Memos](../../instructions/skill-learning.instructions.md) for the full memo protocol.
+Read `.github/memories/skill-memos/instruction-refiner.md` and apply any recorded advice. Follow [Skill Learning — Persistent Memos](../../instructions/skill-learning.instructions.md) for the full memo protocol.
 
-**Resilience protocol** — read and follow [Resilience Protocol](../../instructions/resilience-protocol.instructions.md). Check `/memories/session/skill-progress.md` for a prior checkpoint for this skill and argument. If one exists, offer to resume. Checkpoint your progress after every major step. Emit a brief status message to the user after every step.
+**Resilience protocol** — read and follow [Resilience Protocol](../../instructions/resilience-protocol.instructions.md). Check `.github/memories/session/skill-progress.md` for a prior checkpoint for this skill and argument. If one exists, offer to resume. Checkpoint your progress after every major step. Emit a brief status message to the user after every step.
 
 ## Step 1 — Identify the Active Harness
 

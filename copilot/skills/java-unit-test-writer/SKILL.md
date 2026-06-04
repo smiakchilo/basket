@@ -21,7 +21,7 @@ Writes or improves unit tests for a Java class until **line and branch coverage 
 When asked to test **more than one class**, process them **sequentially, one at a time**. For each class:
 
 1. Execute Steps 1–8 fully for that class.
-2. After delivering the final checklist (Step 8), save a summary to `/memories/session/skill-progress.md` — including the class name, final coverage numbers, and status.
+2. After delivering the final checklist (Step 8), save a summary to `.github/memories/session/skill-progress.md` — including the class name, final coverage numbers, and status.
 3. **Clear intermediate state**: do not carry raw file contents, build outputs, or analysis notes from the completed class into the next one. Only retain the summary checkpoint.
 4. Proceed to the next class.
 
@@ -72,7 +72,7 @@ After the subagent returns:
    - If the user provides a path, verify it exists (`Test-Path`). If it does not exist → **stop immediately**.
    - Derive `java_runner_path` as `<user path>\bin\java.exe`.
 
-3. **Memoize to repo memory** — write or update `/memories/repo/jdk-paths.md`. If a stale row existed for this version, replace it:
+3. **Memoize to repo memory** — write or update `.github/memories/repo/jdk-paths.md`. If a stale row existed for this version, replace it:
 
    ```markdown
    # JDK Paths
@@ -82,7 +82,7 @@ After the subagent returns:
    | 11 | C:\Program Files\Java\jdk-11.0.20 | 2026-05-01 |
    ```
 
-4. **Memoize to session memory** — compute `JAVA_HOME_OVERRIDE_REQUIRED` (`YES` if the subagent returned `system_default: false`; `NO` if `true`), then append to `/memories/session/skill-progress.md` (create if absent):
+4. **Memoize to session memory** — compute `JAVA_HOME_OVERRIDE_REQUIRED` (`YES` if the subagent returned `system_default: false`; `NO` if `true`), then append to `.github/memories/session/skill-progress.md` (create if absent):
 
    ```
    ## Java Runner
@@ -118,7 +118,7 @@ runSubagent(
 
 ### Main Agent: Build and Memoize the Fact Sheet
 
-After the subagent returns, create `/memories/session/env-facts.md` with this content:
+After the subagent returns, create `.github/memories/session/env-facts.md` with this content:
 
 ```markdown
 # Environment Fact Sheet
@@ -171,9 +171,9 @@ This skill exists to produce **informative test coverage** — tests that valida
 
 ## Step 0 — Read Skill Memos and Resilience Protocol
 
-Read `/memories/skill-memos/java-unit-test-writer.md` and apply any recorded advice. Follow [Skill Learning — Persistent Memos](../../instructions/skill-learning.instructions.md) for the full memo protocol.
+Read `.github/memories/skill-memos/java-unit-test-writer.md` and apply any recorded advice. Follow [Skill Learning — Persistent Memos](../../instructions/skill-learning.instructions.md) for the full memo protocol.
 
-**Resilience protocol** — read and follow [Resilience Protocol](../../instructions/resilience-protocol.instructions.md). Check `/memories/session/skill-progress.md` for a prior checkpoint matching this task. If one exists, offer to resume. Checkpoint your progress after every major step. Emit a brief status message to the user after every step.
+**Resilience protocol** — read and follow [Resilience Protocol](../../instructions/resilience-protocol.instructions.md). Check `.github/memories/session/skill-progress.md` for a prior checkpoint matching this task. If one exists, offer to resume. Checkpoint your progress after every major step. Emit a brief status message to the user after every step.
 
 ## Step 1 — Read the Rules
 
@@ -181,7 +181,7 @@ Load and internalize all rules from [java-testing.instructions.md](../../instruc
 
 ## Step 2 — Confirm JDK Session State
 
-> **Pre-condition**: Both blocking steps have already run. Read `JAVA_SDK_PATH`, `JAVA_RUNNER_PATH`, and `JAVA_HOME_OVERRIDE_REQUIRED` from `/memories/session/env-facts.md` — the authoritative single source of truth. Do **not** re-detect or re-scan.
+> **Pre-condition**: Both blocking steps have already run. Read `JAVA_SDK_PATH`, `JAVA_RUNNER_PATH`, and `JAVA_HOME_OVERRIDE_REQUIRED` from `.github/memories/session/env-facts.md` — the authoritative single source of truth. Do **not** re-detect or re-scan.
 
 Confirm all three values are present. If `env-facts.md` does not exist (e.g. a resumed run that lost state), re-execute both blocking steps in full before continuing.
 
@@ -217,7 +217,7 @@ runSubagent(
   prompt: "You are an expert Java code analyst. Your job is to deeply analyze a Java class and produce a comprehensive Test Scenario Catalog that covers all meaningful code paths, edge cases, and potential bugs.
 
 **Read these files first, in order:**
-1. Environment Fact Sheet at: <absolute path to /memories/session/env-facts.md>
+1. Environment Fact Sheet at: <absolute path to .github/memories/session/env-facts.md>
    — This contains the project's Java version, AEM version, and available test dependencies. Internalize before reading anything else.
 2. class-analysis.md at: <absolute path to skills/java-unit-test-writer/class-analysis.md>
    — This contains your full analysis protocol. Follow it phase by phase.
@@ -241,7 +241,7 @@ runSubagent(
 
 After the subagent returns:
 
-1. **Save** the Test Scenario Catalog to `/memories/session/test-scenario-catalog.md` for resilience.
+1. **Save** the Test Scenario Catalog to `.github/memories/session/test-scenario-catalog.md` for resilience.
 2. **Handle Critical Issues**: If the subagent reported critical issues (issues that prevent correct test execution, violate fundamental project rules, or indicate the class under test has structural problems that make meaningful testing impossible), present them to the user with three options via `vscode_askQuestions`:
 
    | Option | Label | Behavior |
@@ -274,7 +274,7 @@ Before writing any new test code, measure the coverage that the **existing** tes
    - If **both** LINE ≥ coverage target **and** BRANCH ≥ coverage target → report to the user: *"Existing tests for `<ClassName>` already meet the coverage target (LINE: N%, BRANCH: N%). No additional tests needed."* **Stop** — skip Steps 4–8.
    - If existing tests **fail to compile or fail at runtime** → record the failure, continue to Step 4. The Step 6 iteration loop will handle compilation and test fixes.
    - Otherwise → record baseline coverage and continue to Step 4.
-4. **Checkpoint** baseline numbers to `/memories/session/skill-progress.md`:
+4. **Checkpoint** baseline numbers to `.github/memories/session/skill-progress.md`:
 
    ```
    ## Baseline Coverage (existing tests)
@@ -374,13 +374,13 @@ $$\text{coverage} = \frac{\text{covered}}{\text{covered} + \text{missed}} \times
 
 Repeat Steps 4 → 5 until **either** (a) the coverage target is met, **or** (b) all remaining uncovered paths are confirmed genuinely untestable per [Handling Genuinely Untestable Paths](#handling-genuinely-untestable-paths) — whichever comes first. Do not continue adding tests beyond that point. Every Maven re-run in this loop **must** follow the [Terminal Execution Rules](#terminal-execution-rules). Never yield control, never wait passively, never ask the user to continue.
 
-**Checkpoint after every iteration**: update `/memories/session/skill-progress.md` with the current LINE % and BRANCH % so progress survives an interruption.
+**Checkpoint after every iteration**: update `.github/memories/session/skill-progress.md` with the current LINE % and BRANCH % so progress survives an interruption.
 
 ### Critical Rules Refresher
 
 **Before writing or editing any test code in each iteration**, re-read this compact checklist. These are the rules most likely to be violated after multiple iterations when earlier instructions have been pushed out of attention:
 
-1. **Re-read `/memories/session/env-facts.md`** — confirm the Java version, available test dependencies, AEM Mock version, AND `JAVA_HOME_OVERRIDE_REQUIRED`. Do not import classes from dependencies not listed there. Do not use Java language features above the declared version. **If `JAVA_HOME_OVERRIDE_REQUIRED` is `YES`, every Maven command in this iteration MUST include the `set JAVA_HOME=<JAVA_SDK_PATH>&&` prefix** (read `JAVA_SDK_PATH` from the same file).
+1. **Re-read `.github/memories/session/env-facts.md`** — confirm the Java version, available test dependencies, AEM Mock version, AND `JAVA_HOME_OVERRIDE_REQUIRED`. Do not import classes from dependencies not listed there. Do not use Java language features above the declared version. **If `JAVA_HOME_OVERRIDE_REQUIRED` is `YES`, every Maven command in this iteration MUST include the `set JAVA_HOME=<JAVA_SDK_PATH>&&` prefix** (read `JAVA_SDK_PATH` from the same file).
 2. **Consult the Test Scenario Catalog** — before adding tests to fill coverage gaps, check the catalog for scenarios that target those uncovered branches. Prefer catalog scenarios over ad-hoc test creation, since the catalog was produced by deep expert analysis.
 3. **Exhaust Mock Avoidance Hierarchy** — before every `Mockito.mock()`, walk through: **(a)** AemContext / Sling testing libraries (`context.request()`, `context.resourceResolver()`, `MockResourceResolver`, etc.), **(b)** real `…Impl` class from the project registered via `context.registerService()` / `context.registerInjectActivateService()`, **(c)** inline makeshift class for simple interfaces (anonymous or `private static` inner class), **(d)** custom `AdapterFactory` or `context.registerAdapter()` for `.adaptTo()` needs. Only **(e)** `Mockito.mock()` as absolute last resort when a–d are genuinely infeasible. AEM platform classes (`SlingHttpServletRequest`, `ResourceResolver`, `Resource`, `Session`, etc.) come from AemContext — NEVER from `Mockito.mock()`.
 4. **Split call chains** — capture every intermediate return value in a typed local variable. Add `assertNotNull` before calling methods on it. No `foo.getBar().getBaz()` chains.
@@ -407,7 +407,7 @@ This prevents accumulation of multiple compilation errors that obscure each othe
 
 ### Error Ledger
 
-Track every build failure in `/memories/session/error-ledger.md` to detect circular reasoning. After each failed build (compilation or test execution), append a structured entry:
+Track every build failure in `.github/memories/session/error-ledger.md` to detect circular reasoning. After each failed build (compilation or test execution), append a structured entry:
 
 ```markdown
 ### Attempt <N>
@@ -441,7 +441,7 @@ The circuit breaker prevents the agent from going in circles when a fix approach
 **When the circuit breaker trips:**
 
 1. **STOP** modifying test code immediately. Do not attempt another fix.
-2. **Save** the current test class to `/memories/session/stuck-test-snapshot.md`.
+2. **Save** the current test class to `.github/memories/session/stuck-test-snapshot.md`.
 3. **Read** the error ledger entries for the current error class.
 4. **Invoke** the [Diagnostic Subagent](#diagnostic-subagent-invocation).
 
@@ -478,10 +478,10 @@ runSubagent(
    — This contains your full diagnostic protocol. Follow it phase by phase.
 
 **Inputs:**
-- ENV_FACTS_PATH: <absolute path to /memories/session/env-facts.md>
+- ENV_FACTS_PATH: <absolute path to .github/memories/session/env-facts.md>
 - ERROR_LEDGER_ENTRIES:
 <paste the relevant error ledger entries here>
-- TEST_CLASS_PATH: <absolute path to /memories/session/stuck-test-snapshot.md>
+- TEST_CLASS_PATH: <absolute path to .github/memories/session/stuck-test-snapshot.md>
 - CLASS_UNDER_TEST_PATH: <absolute path to the production class>
 - FAILING_ERROR_MESSAGES:
 <paste the specific compiler errors or test failure stack traces>
@@ -543,7 +543,7 @@ If the JetBrains MCP server is available, use its **"Find problems in file"** to
 
 ### Step 6 Exit Gate — MANDATORY
 
-**Step 6 is NOT complete until Step 7 (Compliance Review) has run and returned a passing report.** Delivering coverage numbers to the user does NOT constitute task completion. Do NOT proceed to Step 8, do NOT summarize results, and do NOT emit any "done" or "success" message before Step 7 finishes. Checkpoint to `/memories/session/skill-progress.md` now:
+**Step 6 is NOT complete until Step 7 (Compliance Review) has run and returned a passing report.** Delivering coverage numbers to the user does NOT constitute task completion. Do NOT proceed to Step 8, do NOT summarize results, and do NOT emit any "done" or "success" message before Step 7 finishes. Checkpoint to `.github/memories/session/skill-progress.md` now:
 
 ```
 ## Step 6 Exit
@@ -574,7 +574,7 @@ runSubagent(
   prompt: "You are a test compliance reviewer. Your job is to review a Java unit test class for full compliance with the project's testing and coding standards, auto-fix any violations, and confirm the tests still pass.
 
 **Read these files first, in order:**
-1. Environment Fact Sheet at: <absolute path to /memories/session/env-facts.md>
+1. Environment Fact Sheet at: <absolute path to .github/memories/session/env-facts.md>
    — This contains the project's Java version, AEM version, and available test dependencies. Internalize before reading anything else.
 2. compliance-review.md at: <absolute path to skills/java-unit-test-writer/compliance-review.md>
    — This contains your full review protocol. Follow it phase by phase.
@@ -593,7 +593,7 @@ runSubagent(
 - UNTESTABLE_PATHS: <list or 'none'>
 - CRITICAL_ISSUES_STATUS: <'none' | 'auto-fixed' | 'manual-fixed' | 'proceed-anyway'>
 - LOGIC_ERROR_DECISIONS: <list or 'none'>
-- TEST_SCENARIO_CATALOG_PATH: <absolute path to /memories/session/test-scenario-catalog.md, or 'none'>
+- TEST_SCENARIO_CATALOG_PATH: <absolute path to .github/memories/session/test-scenario-catalog.md, or 'none'>
 
 **Execute all phases in compliance-review.md.** Auto-fix every violation found. Re-run Maven to confirm BUILD SUCCESS after fixes. Return the Final Report as specified in Phase 7 of compliance-review.md.",
   description: "Compliance review of <TestClassName>"

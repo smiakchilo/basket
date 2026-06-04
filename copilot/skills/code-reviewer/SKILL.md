@@ -61,11 +61,11 @@ Extract the `worker` and `expert` model names from the **Roles** table. Use thes
 
 ## Phase 1 — Read Skill Memos and Resilience Protocol
 
-Read `/memories/skill-memos/code-reviewer.md` and apply any recorded advice. Follow [Skill Learning — Persistent Memos](../../instructions/skill-learning.instructions.md) for write-back protocol.
+Read `.github/memories/skill-memos/code-reviewer.md` and apply any recorded advice. Follow [Skill Learning — Persistent Memos](../../instructions/skill-learning.instructions.md) for write-back protocol.
 
 Read `references/code-review-hints.md` (relative to this skill's directory) if it exists. Internalize every heuristic listed under **Review Heuristics** and apply them as dedicated checks during Pass 2 analysis in Phase 4.
 
-Follow [Resilience Protocol](../../instructions/resilience-protocol.instructions.md); check `/memories/session/skill-progress.md` on entry and offer to resume if a matching checkpoint exists.
+Follow [Resilience Protocol](../../instructions/resilience-protocol.instructions.md); check `.github/memories/session/skill-progress.md` on entry and offer to resume if a matching checkpoint exists.
 
 ## Phase 2 — Resolve Mode D (Since Last Review)
 

@@ -24,7 +24,7 @@ Search for and read every file matching these patterns in the workspace:
 
 For each instruction file located in Step 1, check whether a cached summary exists and is up to date:
 
-1. Read `/memories/repo/instruction-cache.md`. If the file does not exist, treat all instruction files as cache misses.
+1. Read `.github/memories/repo/instruction-cache.md`. If the file does not exist, treat all instruction files as cache misses.
 2. Compute the SHA-256 hash of each instruction file:
    - PowerShell: `Get-FileHash -Path "<path>" -Algorithm SHA256 | Select-Object -ExpandProperty Hash`
    - Unix: `sha256sum "<path>" | cut -d' ' -f1`
@@ -36,7 +36,7 @@ For each instruction file located in Step 1, check whether a cached summary exis
 
 Execute every step in this protocol directly (inline, not via a subagent).
 
-1. Read the existing `/memories/repo/instruction-cache.md` (create the file if it does not exist).
+1. Read the existing `.github/memories/repo/instruction-cache.md` (create the file if it does not exist).
 2. For each entry in `## New Instruction Summaries`:
    - Parse the `### <file-path> | SHA256: <hash>` header to extract the path and hash.
    - Find the matching `## <file-path>` block in the cache and replace it entirely; or append a new block if the path is not yet cached.
@@ -48,4 +48,4 @@ Execute every step in this protocol directly (inline, not via a subagent).
      - <rule 1>
      - <rule 2>
      ```
-3. Write the updated content back to `/memories/repo/instruction-cache.md`.
+3. Write the updated content back to `.github/memories/repo/instruction-cache.md`.

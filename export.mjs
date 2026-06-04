@@ -175,6 +175,17 @@ function getSkillNames() {
    --------------- */
 
 /**
+ * Rewrites {@code .github/memories/} path references to the destination-specific memories
+ * folder (e.g. {@code .claude/memories/} or {@code .codex/memories/}).
+ * @param content Raw Markdown file content
+ * @param destPrefix The destination folder prefix, e.g. {@code .claude} or {@code .codex}
+ * @return Rewritten content string
+ */
+function rewriteMemoryPaths(content, destPrefix) {
+  return content.replace(/\.github\/memories\//g, `${destPrefix}/memories/`);
+}
+
+/**
  * Rewrites all references to {@code copilot/instructions/} files in a skill Markdown body
  * so they point at their Claude equivalents:
  * {@code global-copilot-instructions.md → CLAUDE.md} (depth-relative) and
@@ -199,6 +210,7 @@ function rewriteLinksForClaude(content, _depth) {
   content = content.replace(/\binstructions\/global-copilot-instructions\.md/g, 'CLAUDE.md');
   // Plain text: instructions/X.instructions.md → rules/X.md
   content = content.replace(/\binstructions\/([\w-]+)\.instructions\.md/g, 'rules/$1.md');
+  content = rewriteMemoryPaths(content, '.claude');
   return content;
 }
 
@@ -238,6 +250,7 @@ function makeCodexRewriteFn(skillTargetedNames) {
     );
     // Plain text: global instruction path → AGENTS.md
     content = content.replace(/\binstructions\/global-copilot-instructions\.md/g, 'AGENTS.md');
+    content = rewriteMemoryPaths(content, '.codex');
     return content;
   };
 }
@@ -336,7 +349,7 @@ function exportClaude(instructions, skillNames) {
     if (name === 'global-copilot-instructions') continue;
 
     const ruleFm = {};
-    if (frontmatter.description) ruleFm.description = frontmatter.description;
+    if (frontmatter.description) ruleFm.description = rewriteMemoryPaths(frontmatter.description, '.claude');
 
     const scopedGlobs = normalizeGlobs(frontmatter.applyTo).filter(g => g !== '**');
     if (scopedGlobs.length > 0) {
@@ -346,7 +359,7 @@ function exportClaude(instructions, skillNames) {
       alwaysOnNames.push(name);
     }
 
-    const out = `---\n${yaml.dump(ruleFm).trimEnd()}\n---\n\n${body.trimEnd()}\n`;
+    const out = `---\n${yaml.dump(ruleFm).trimEnd()}\n---\n\n${rewriteMemoryPaths(body, '.claude').trimEnd()}\n`;
     writeFileSync(join(CLAUDE_RULES_DIR, `${name}.md`), out, 'utf8');
     console.log(`  claude/rules/${name}.md`);
   }
@@ -456,7 +469,7 @@ function exportCodex(instructions, skillNames) {
       const title = frontmatter.description
         ? frontmatter.description.replace(/\. .*$/, '').replace(/\.$/, '')
         : name;
-      parts.push(body.trimEnd(), '', '---', '');
+      parts.push(rewriteMemoryPaths(body, '.codex').trimEnd(), '', '---', '');
     }
 
     if (profile.name === '') {

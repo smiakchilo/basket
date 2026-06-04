@@ -26,11 +26,11 @@ Fetches PR comments (review comments and conversation comments) from the GitHub 
 
 ### 0.1 Read Skill Memos
 
-Read `/memories/skill-memos/comment-processor.md` and apply any recorded advice. Follow [Skill Learning — Persistent Memos](../../instructions/skill-learning.instructions.md) for the full memo protocol.
+Read `.github/memories/skill-memos/comment-processor.md` and apply any recorded advice. Follow [Skill Learning — Persistent Memos](../../instructions/skill-learning.instructions.md) for the full memo protocol.
 
 ### 0.2 Resilience Protocol
 
-Read and follow [Resilience Protocol](../../instructions/resilience-protocol.instructions.md). Check `/memories/session/comment-processor-progress.md` for a prior checkpoint matching this task. If one exists, offer to resume. Checkpoint your progress after completing each numbered step (Step 0, Step 1, Step 2, etc.). Emit a brief status message to the user after every step.
+Read and follow [Resilience Protocol](../../instructions/resilience-protocol.instructions.md). Check `.github/memories/session/comment-processor-progress.md` for a prior checkpoint matching this task. If one exists, offer to resume. Checkpoint your progress after completing each numbered step (Step 0, Step 1, Step 2, etc.). Emit a brief status message to the user after every step.
 
 ### 0.3 Model Configuration
 
@@ -374,7 +374,7 @@ After completing a comment (apply + mandatory lesson, or skip):
 
 **Gate**: if the comment was applied and either lesson check (4.1.5.A or 4.1.5.B) has not yet been completed, do NOT advance. Complete both before proceeding.
 
-1. Checkpoint progress to `/memories/session/comment-processor-progress.md` — record last completed comment number, how many lessons were captured so far, and key state.
+1. Checkpoint progress to `.github/memories/session/comment-processor-progress.md` — record last completed comment number, how many lessons were captured so far, and key state.
 2. Emit: _"Comment #{n} done ({applied/skipped}). {L} lesson(s) captured so far. Moving to comment #{n+1}."_
 3. Begin the next comment at **4.1.1**.
 
@@ -416,7 +416,7 @@ Present a structured summary:
 
 ### 5.2 Cleanup
 
-Delete `/memories/session/comment-processor-progress.md` to allow the next invocation to start fresh.
+Delete `.github/memories/session/comment-processor-progress.md` to allow the next invocation to start fresh.
 
 ## Constraints
 

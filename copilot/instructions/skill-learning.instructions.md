@@ -1,5 +1,5 @@
 ---
-description: "Use when executing any skill workflow from the skills/ folder. Governs how to read, write, and consolidate persistent skill memos stored under /memories/skill-memos/."
+description: "Use when executing any skill workflow from the skills/ folder. Governs how to read, write, and consolidate persistent skill memos stored under .github/memories/skill-memos/."
 applyTo: "**/skills/**/SKILL.md"
 ---
 
@@ -12,7 +12,7 @@ applyTo: "**/skills/**/SKILL.md"
 Before starting any skill workflow, read the skill's memo file via the memory tool:
 
 ```
-/memories/skill-memos/<skill-name>.md
+.github/memories/skill-memos/<skill-name>.md
 ```
 
 If the file exists, internalize its contents — they capture previously encountered problems and verified solutions. Apply any relevant advice during the current execution.

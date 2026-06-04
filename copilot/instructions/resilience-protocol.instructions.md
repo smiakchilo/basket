@@ -12,7 +12,7 @@ applyTo: "**/skills/**/SKILL.md"
 After completing each **major step** of a skill (e.g. Step 1, Step 2, …), save a progress checkpoint to session memory:
 
 ```
-/memories/session/skill-progress.md
+.github/memories/session/skill-progress.md
 ```
 
 The checkpoint must contain:
@@ -32,7 +32,7 @@ Checkpoint after every step that produces durable output: reading/analyzing a fi
 
 At the **very beginning** of every skill execution (Step 0 or equivalent):
 
-1. Read `/memories/session/skill-progress.md` via the memory tool.
+1. Read `.github/memories/session/skill-progress.md` via the memory tool.
 2. If the file exists **and** its skill name + request match the current invocation:
    - Present a one-line summary of the saved progress to the user.
    - Ask via `vscode_askQuestions`: **Resume from Step N** (recommended) or **Restart from scratch**.
@@ -41,7 +41,7 @@ At the **very beginning** of every skill execution (Step 0 or equivalent):
 
 ### Cleanup
 
-When a skill completes successfully (final checklist / report delivered), **delete** `/memories/session/skill-progress.md` so the next invocation starts fresh.
+When a skill completes successfully (final checklist / report delivered), **delete** `.github/memories/session/skill-progress.md` so the next invocation starts fresh.
 
 ## Periodic Status Emission
 
