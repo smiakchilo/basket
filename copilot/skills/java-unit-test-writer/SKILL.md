@@ -528,7 +528,9 @@ Apply this pass as the final structural step — after the deduplication pass is
 
 **Condition**: Run this pass after the Method Grouping Pass (or after the Deduplication Pass when the class has ≤10 methods), before the Step 6 Exit Gate.
 
-If the JetBrains MCP server is available, use its **"Find problems in file"** tool to catch code smells the compiler won't reject: unused imports, unused variables, unused method parameters, dangling `throws` clauses, redundant casts, unnecessary `null` checks, and similar warnings.
+**Discovery — MANDATORY**: The agent **must** actively probe for the JetBrains MCP server before concluding it is absent. Use `tool_search` with the query `"JetBrains MCP find problems"` to locate the tool. Only after this explicit discovery attempt fails may the agent treat the server as unavailable. Silently skipping this step without attempting discovery is a skill violation.
+
+If the JetBrains MCP server is found, use its **"Find problems in file"** tool to catch code smells the compiler won't reject: unused imports, unused variables, unused method parameters, dangling `throws` clauses, redundant casts, unnecessary `null` checks, and similar warnings.
 
 1. Call **"Find problems in file"** with the absolute path of the test class.
 2. For each problem reported, fix it in the test class.
@@ -539,7 +541,7 @@ If the JetBrains MCP server is available, use its **"Find problems in file"** to
    ```
    Omit the `set JAVA_HOME=<JAVA_SDK_PATH>&&` prefix if `JAVA_HOME_OVERRIDE_REQUIRED` is `NO`.
 
-> **JetBrains MCP unavailable**: if the tool is not present or returns an error, skip this pass entirely. This is not a blocker.
+> **JetBrains MCP unavailable**: only after the mandatory discovery attempt above, if the tool is genuinely not present or returns an error, skip this pass entirely. This is not a blocker — but skipping without attempting discovery is a skill violation.
 
 ### Step 6 Exit Gate — MANDATORY
 
