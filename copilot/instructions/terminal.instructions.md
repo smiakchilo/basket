@@ -1,9 +1,9 @@
 ---
-description: Best practices for invoking Maven/Gradle builds in Windows Terminal to avoid quoting issues, output flooding, and timeouts.
-applyTo: **
+description: Best practices for invoking Maven/Gradle builds in Terminal to avoid quoting issues, output flooding, and timeouts.
+applyTo: "**"
 ---
 
-# Windows Terminal Compatibility
+# Terminal Compatibility
 
 Agents on Windows use PowerShell by default. PowerShell parses arguments with `-D` flags (Maven, Gradle, Java CLI) differently from `cmd.exe`, causing quoting failures, garbled properties, and silent misconfigurations. The rules below prevent those issues and apply to **every** terminal command that invokes Maven, Gradle, or any JVM-based tool with `-D` system properties.
 
@@ -40,5 +40,5 @@ Build output floods the context window and is the primary driver of mid-executio
 ## Output Retrieval
 
 1. After every `run_in_terminal` build invocation, call `get_terminal_output` **at least once** even if `run_in_terminal` already returned output. Terminal output may arrive in chunks.
-2. When scanning output for `BUILD SUCCESS` or `BUILD FAILURE`, search the **entire** returned string, not just the last few lines — Windows terminal output can interleave progress lines with the final status.
+2. When scanning output for `BUILD SUCCESS` or `BUILD FAILURE`, search the **entire** returned string, not just the last few lines — terminal output can interleave progress lines with the final status.
 3. If the output exceeds the tool's size limit, look for the build status token near the end. Do not re-run the build just because output was truncated.
