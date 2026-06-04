@@ -38,9 +38,7 @@ When invoked directly via `/dependency-analyzer`, the current model executes the
 
 ## Step 0 — Read Skill Memos
 
-Use the memory tool to read `/memories/skill-memos/dependency-analyzer.md`. If it exists, apply any relevant advice. If not, proceed normally.
-
-**Write-back rule** — whenever an unexpected problem arises during execution and you resolve it, append a memo entry (`### Title — YYYY-MM-DD` / `**Problem**: …` / `**Fix**: …`) to the same file (create if absent). Consolidate if the file exceeds ~30 lines.
+Read `/memories/skill-memos/dependency-analyzer.md` and apply any recorded advice. Follow [Skill Learning — Persistent Memos](../../instructions/skill-learning.instructions.md) for the full memo protocol.
 
 ## Step 1 — Resolve Script Paths
 

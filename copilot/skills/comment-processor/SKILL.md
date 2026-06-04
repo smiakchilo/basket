@@ -26,10 +26,7 @@ Fetches PR comments (review comments and conversation comments) from the GitHub 
 
 ### 0.1 Read Skill Memos
 
-Use the memory tool to read `/memories/skill-memos/comment-processor.md`. If the file exists, internalize its advice before proceeding. If it does not exist, continue.
-
-**Write-back rule** — whenever an unexpected problem arises during this execution and you resolve it, append a memo entry (`### Title — YYYY-MM-DD` / `**Problem**: …` / `**Fix**: …`) to the same file (create it if absent). If the file exceeds ~30 lines, consolidate old entries. See [Skill Learning — Persistent Memos](../../instructions/skill-learning.instructions.md) for the full protocol.
-
+Read `/memories/skill-memos/comment-processor.md` and apply any recorded advice. Follow [Skill Learning — Persistent Memos](../../instructions/skill-learning.instructions.md) for the full memo protocol.
 
 ### 0.2 Resilience Protocol
 

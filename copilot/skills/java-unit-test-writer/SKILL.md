@@ -171,9 +171,7 @@ This skill exists to produce **informative test coverage** — tests that valida
 
 ## Step 0 — Read Skill Memos and Resilience Protocol
 
-Use the memory tool to read `/memories/skill-memos/java-unit-test-writer.md`. If the file exists, internalize its advice before proceeding. If it does not exist, continue.
-
-**Write-back rule** — whenever an unexpected problem arises during this execution and you resolve it, append a memo entry (`### Title — YYYY-MM-DD` / `**Problem**: …` / `**Fix**: …`) to the same file (create it if absent). If the file exceeds ~30 lines, consolidate old entries. See [Skill Learning — Persistent Memos](../../instructions/skill-learning.instructions.md) for the full protocol.
+Read `/memories/skill-memos/java-unit-test-writer.md` and apply any recorded advice. Follow [Skill Learning — Persistent Memos](../../instructions/skill-learning.instructions.md) for the full memo protocol.
 
 **Resilience protocol** — read and follow [Resilience Protocol](../../instructions/resilience-protocol.instructions.md). Check `/memories/session/skill-progress.md` for a prior checkpoint matching this task. If one exists, offer to resume. Checkpoint your progress after every major step. Emit a brief status message to the user after every step.
 

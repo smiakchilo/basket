@@ -19,14 +19,25 @@ If the file exists, internalize its contents — they capture previously encount
 
 If the file does not exist, proceed normally. It will be created when the first issue arises.
 
-## After Resolving an Issue
+## When to Write Memos
 
-Whenever an unexpected problem is encountered during skill execution **and successfully resolved** (e.g., a build failure, a wrong assumption about the codebase, a flaky tool invocation, an API misuse), append a concise memo entry to the skill's memo file:
+Write memos in two situations:
+
+1. **After completing a task.** Once the task is fully done, recap the session: identify every unexpected problem encountered and how it was resolved (e.g., a build failure, a wrong assumption about the codebase, a flaky tool invocation, an API misuse). For each, write a memo entry. Do not write memos mid-task — a problem is not truly resolved until the task succeeds end-to-end.
+
+2. **After any user correction.** Treat the correction as a resolved issue and write a memo immediately.
+
+### Deduplication
+
+Before appending a new entry, scan existing entries in the memo file. If a similar lesson already exists, use `str_replace` to correct or expand it rather than appending a duplicate.
+
+### Entry format
+
+Each entry must state a preventive lesson — what to do or avoid next time — not just describe what happened.
 
 ```
 ### <Short title> — <YYYY-MM-DD>
-**Problem**: <one sentence>
-**Fix**: <one sentence>
+**Lesson**: <what to do or avoid to prevent this mistake — one or two sentences>
 ```
 
 Use the memory tool's `create` command if the file does not yet exist, or `insert` / `str_replace` to append to an existing file.
