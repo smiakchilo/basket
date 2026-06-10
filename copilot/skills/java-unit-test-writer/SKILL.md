@@ -606,7 +606,28 @@ runSubagent(
 
 If the subagent's report indicates `Tests pass: NO`, diagnose and fix the issue. Re-invoke the subagent or fix manually and re-run Maven until `BUILD SUCCESS` is confirmed.
 
-## Step 8 — Final Report
+
+## Step 8 — Static Analysis Pass (JetBrains MCP)
+
+**Condition**: Run this pass after the compliance review (Step 7) fixes have been applied — it is the very last code-touching step before the Final Report.
+
+**Discovery — MANDATORY**: The agent **must** actively probe for the JetBrains MCP server before concluding it is absent. Use `tool_search` with the query `"JetBrains MCP find problems"` to locate the tool. Only after this explicit discovery attempt fails may the agent treat the server as unavailable. Silently skipping this step without attempting discovery is a skill violation.
+
+If the JetBrains MCP server is found, use its **"Find problems in file"** tool to catch code smells the compiler won't reject: unused imports, unused variables, unused method parameters, dangling `throws` clauses, redundant casts, unnecessary `null` checks, and similar warnings.
+
+1. Call **"Find problems in file"** with the absolute path of the test class.
+2. For each problem reported, fix it in the test class.
+3. Repeat until **"Find problems in file"** returns no problems.
+4. After all problems are resolved, run a **compile-only** build to confirm the fixes did not introduce regressions:
+   ```
+   cmd /c "set JAVA_HOME=<JAVA_SDK_PATH>&& mvn test-compile -pl core -B -ntp 2>&1"
+   ```
+   Omit the `set JAVA_HOME=<JAVA_SDK_PATH>&&` prefix if `JAVA_HOME_OVERRIDE_REQUIRED` is `NO`.
+
+> **JetBrains MCP unavailable**: only after the mandatory discovery attempt above, if the tool is genuinely not present or returns an error, skip this pass entirely. This is not a blocker — but skipping without attempting discovery is a skill violation.
+
+
+## Step 9 — Final Report
 
 Present the subagent's compliance review report to the user verbatim — it already contains the violations fixed, assertion quality improvements, and the final checklist. The subagent's Phase 7 defines the authoritative report format; do not duplicate or restate its checklist here.
 
