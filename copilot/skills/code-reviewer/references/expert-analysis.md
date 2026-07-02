@@ -24,6 +24,17 @@ Additional labels (appended to severity):
 - **[Performance]** — for runtime performance findings
 - **[Consistency]** — for pattern deviation findings
 
+## Finding Language
+
+Write the **Why** and **Suggestion** of every finding in the simplest, clearest words you can. Imagine the reader has a lower technical level and does not speak English as a first language — your goal is for them to understand you completely.
+
+- Use short, common words. Avoid jargon, niche terms, and abbreviations the reader may not know.
+- When an idea is hard, explain it with a simple everyday comparison or a small concrete example.
+- Do not use metaphors, idioms, or wordplay that need strong English to understand.
+- Keep sentences short and direct.
+
+This applies only to the **Why** and **Suggestion** text. Finding labels, severity tags, line/file references, and rule citations stay exactly as they are.
+
 ## Analysis Passes
 
 Before Pass 1, build an internal coding-standards checklist from the `## Instruction Summaries`
