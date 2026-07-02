@@ -45,15 +45,15 @@ node install.mjs
 | Step | Condition | What it does |
 |------|-----------|-------------|
 | 0 | always | Runs `export.mjs` to regenerate `claude/` and `codex/` |
-| 1 | `~/.copilot` exists | Copies `copilot/` → `~/.copilot/` (overwrite) |
-| 2 | `~/.claude` exists | Copies `claude/` + `copilot/agents/` + `copilot/skills/` → `~/.claude/` |
-| 3 | `.codex-projects` exists | For each registered project path (see below) |
+| 1 | `.copilot-projects` exists | For each registered path, copies `copilot/` → `{project}/.github/` |
+| 2 | `.claude-projects` exists | For each registered path, copies `claude/` → `{project}/.claude/`, then overlays `copilot/skills/` and `claude/skills/` into `{project}/.claude/skills/` |
+| 3 | `.codex-projects` exists | For each registered path, copies `codex/` → `{project}/.codex/`, then overlays `copilot/skills/` and `codex/skills/` into `{project}/.codex/skills/` |
 
-It is safe to re-run: copies overwrite matching files while leaving destination-only files untouched.
+At least one of the three project-list files must exist and contain a valid path, otherwise `install.mjs` exits with an error. It is safe to re-run: copies overwrite matching files while leaving destination-only files untouched. A destination file that is newer than its source is skipped (with a warning) rather than overwritten.
 
-### Registering projects for Codex CLI
+### Registering projects
 
-Create a `.codex-projects` file in the basket root, one absolute project path per line:
+Each harness has its own project-list file in the basket root. List one absolute project path per line; blank lines and lines starting with `#` are ignored:
 
 ```
 C:/Projects/my-aem-project
@@ -61,13 +61,13 @@ C:/Projects/another-project
 # lines starting with # are ignored
 ```
 
-For each listed path, if a `.codex/` folder already exists under it, `install.mjs` will:
+| File | Installs into | Contents copied |
+|------|---------------|-----------------|
+| `.copilot-projects` | `{project}/.github/` | Everything under `copilot/` (instructions, skills, agents) |
+| `.claude-projects` | `{project}/.claude/` | Everything under `claude/`, plus `copilot/skills/` and `claude/skills/` overlaid into `.claude/skills/` |
+| `.codex-projects` | `{project}/.codex/` | Everything under `codex/`, plus `copilot/skills/` and `codex/skills/` overlaid into `.codex/skills/` |
 
-- Copy `codex/AGENTS.md` → `{project}/.codex/AGENTS.md`
-- Copy `copilot/agents/` → `{project}/.codex/agents/`
-- Copy `copilot/skills/` → `{project}/.codex/skills/`
-- Seed each `*--AGENTS.md` file from `codex/` into the matching project subdirectory
-  (e.g. `core--src--test--AGENTS.md` → `{project}/core/src/test/AGENTS.md`; skipped if that directory doesn't exist)
+You can register the same project in multiple files if you use more than one harness there.
 
 ## Everyday workflow
 
@@ -87,8 +87,10 @@ git add -A && git commit -m "..."
 ```
 basket/
 ├── export.mjs                        # Translates copilot/ → claude/ and codex/
-├── install.mjs                       # One-command machine install (file copies)
-├── .codex-projects                   # Optional: list of project paths for Codex CLI
+├── install.mjs                       # One-command install (copies into registered projects)
+├── .copilot-projects                 # Optional: project paths for GitHub Copilot (.github)
+├── .claude-projects                  # Optional: project paths for Claude Code (.claude)
+├── .codex-projects                   # Optional: project paths for Codex CLI (.codex)
 ├── package.json
 ├── copilot/
 │   ├── instructions/
@@ -129,4 +131,4 @@ basket/
 | Command | Description |
 |---------|-------------|
 | `npm run export` | Regenerate `claude/` and `codex/` from `copilot/` |
-| `npm run install` | Alias for `node install.mjs` (export + copy into home / projects) |
+| `npm run install` | Alias for `node install.mjs` (export + copy into registered projects) |
